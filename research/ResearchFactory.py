@@ -4,8 +4,12 @@ import os
 
 from lib import ClientUser, LoggerFactory, MapManager, MapNames, SimulationVisualization, Utils, SimulationMode
 from research import *
-# from research.SimulationMode import SimulationMode
 from research.ResearchCogMod import ResearchCogMod
+from research.ResearchTrajectory import ResearchTrajectory
+from research.ResearchCarFollow import ResearchCarFollow 
+from research.ResearchCarFollowRepeat import ResearchCarFollowRepeat
+from research.ResearchIDM import ResearchIDM
+
 
 class ResearchFactory:
     def __init__(self, host="127.0.0.1", port=2000, output_dir="logs", map=MapNames.circle_t_junctions) -> None:
@@ -64,3 +68,56 @@ class ResearchFactory:
         client = Utils.createClient(logger, host, port)
         research = ResearchCogMod(client, defaultLogLevel, map, output_dir, simulationMode, simulation_id)
         research.run(maxTicks=maxTicks)
+        
+    
+    @staticmethod
+    def createResearchCogModHighD(maxTicks=100, 
+                                    host="127.0.0.1",
+                                    port=2000,
+                                    timeout=10.0,
+                                    defaultLogLevel=logging.INFO,
+                                    outputDir="logs",
+                                    simulationMode = SimulationMode.ASYNCHRONOUS,
+                                    scenarioID = "scenario1"):
+        
+        print(f"research chosen : CogModHighD with host: {host}, port: {port}, log level: {defaultLogLevel}, output directory: {outputDir}")
+        port = int(port)
+        name = "CogmodHighD"
+        
+        logPath = os.path.join(outputDir, f"{name}.log")
+        logger = LoggerFactory.getBaseLogger(name, defaultLevel=defaultLogLevel, file=logPath)
+        client = Utils.createClient(logger, host, port, timeout=timeout)
+        
+        # research = ResearchTrajectory(client=client,
+        #                               logLevel=defaultLogLevel,
+        #                               outputDir=outputDir,
+        #                               simulationMode=simulationMode,
+        #                               scenarioID=scenarioID)
+        
+        # logger.info(f"Create research Trajectory agent {name}")
+        # research.run(maxTicks=maxTicks)
+        
+        # research = ResearchCarFollow(client=client,
+        #                              logLevel=defaultLogLevel,
+        #                              outputDir="logs",
+        #                              scenarioID=scenarioID)
+        # logger.info(f"Create research Trajectory agent {name}")
+        # research.run(maxTicks=maxTicks)
+        
+        # research = ResearchCarFollowRepeat(client=client,
+        #                                    logLevel=defaultLogLevel,
+        #                                    outputDir="logs",
+        #                                    scenarioID=scenarioID,
+        #                                    pickedScenario=0,
+        #                                    nRepeat=10)
+        # research.run(maxTicks=maxTicks)
+        
+        research = ResearchIDM(client=client,
+                                logLevel=defaultLogLevel,
+                                outputDir="logs",
+                                scenarioID=scenarioID,
+                                pickedScenario=1,
+                                nRepeat=10)
+        research.run(maxTicks=maxTicks)
+        
+        pass

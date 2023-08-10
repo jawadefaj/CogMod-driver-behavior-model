@@ -7,7 +7,7 @@ __pycache__/
 *.so
 
 
-logs/*.csv
+# logs/*.csv
 
 # Distribution / packaging
 .Python
@@ -115,4 +115,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .vscode/settings.json
-logs/2022-12-30-00-00-meta.json
+# logs/*
+dill/*
+highd_tools/dill/*
+highd_tools/notebook/init_notebook.py
+logs/*
