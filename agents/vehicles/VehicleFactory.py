@@ -8,8 +8,6 @@ from agents.navigation.basic_agent import BasicAgent
 from agents.vehicles.SpeedControlledBehaviorAgent import SpeedControlledBehaviorAgent  # pylint: disable=import-error
 from lib import LoggerFactory, ClientUser
 
-from agents.vehicles.qnactr.CogMod import CogModAgent  # cogmod agent 
-from .qnactr.TrajectoryFollower import TrajectoryFollower  # trajectory follower actor agent
 
 
 from lib import LoggerFactory
@@ -77,10 +75,4 @@ class VehicleFactory(ClientUser):
         spawn_command = carla.command.SpawnActor(vehicleBp, spawnPoint)
         return spawn_command
     
-    def createActorAgent(self, id, vehicle, trajectory):
-        agent = TrajectoryFollower(id, vehicle, trajectory)
-        return agent
 
-    def createCogModAgent(self, id, vehicle, destinationPoint, driver_profile):
-        agent = CogModAgent(id, vehicle, destinationPoint, driver_profile)
-        return agent
