@@ -1,12 +1,13 @@
 import logging
 import carla
 import os
-
+from datetime import datetime as date
 from lib import ClientUser, LoggerFactory, MapManager, MapNames, SimulationVisualization, Utils, SimulationMode
 from research import *
 from research.Research1v1NavPathModel import Research1v1NavPathModel
 from research.Research4v4 import Research4v4
-# from research.SimulationMode import SimulationMode
+
+from .ResearchDriverIDMvCogMod import ResearchDriverIDMvCogMod
 
 
 class ResearchFactory:
@@ -108,3 +109,53 @@ class ResearchFactory:
                          )
 
         return research
+    
+    
+    
+    @staticmethod
+    def createResearchDriverIDMvCogMod(maxTicks=100,
+                                       host="127.0.0.1",
+                                       port=2000,
+                                       timeout=10.0,
+                                       default_log_level=logging.INFO,
+                                       output_dir="logs",
+                                       simulation_mode=SimulationMode.SYNCHRONOUS,
+                                       map_name=MapNames.HighWay_Ring,
+                                       high_d_path=None,
+                                       stable_height_path=None,
+                                       dataset_ids=[],
+                                       pivot=None,
+                                       base_distance=800,
+                                       idm_profile = None,
+                                       cogmod_profile = None,
+                                       n_repetitions=10,
+                                       car_follow_filter = None):
+        print("research chosen : ResearchDriverIDMvCogMod")
+        name = "ResearchDriverIDMvCogMod"
+        logPath = os.path.join(output_dir, f"{name}.log")
+        data_file_name = dateStr = date.now().strftime("%Y-%m-%d-%H-%M-%S")
+        
+        logger = LoggerFactory.getBaseLogger(name, defaultLevel=default_log_level, file=logPath)
+        client = Utils.createClient(logger, host, port)
+        
+        research = ResearchDriverIDMvCogMod(client=client,
+                                            simulationMode=simulation_mode,
+                                            map_name=map_name,
+                                            high_d_path=high_d_path,
+                                            stable_height_path=stable_height_path,
+                                            dataset_ids=dataset_ids,
+                                            pivot=pivot,
+                                            base_distance=base_distance,
+                                            idm_profile=idm_profile,
+                                            cogmod_profile=cogmod_profile,
+                                            n_repeat=n_repetitions,
+                                            car_follow_filter=car_follow_filter,
+                                            output_dir=output_dir,
+                                            log_level=default_log_level,
+                                            log_file_name=name,
+                                            data_file_name=data_file_name)
+        research.run(maxTicks)
+        pass
+    
+    
+    

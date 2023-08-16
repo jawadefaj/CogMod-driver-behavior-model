@@ -60,12 +60,11 @@ class BaseResearch(ClientUser):
         # self.world.apply_settings(settings)
         
         if self.simulationMode == SimulationMode.ASYNCHRONOUS:
-            self.logger.warn(f"Starting simulation in asynchronous mode")
+            self.logger.info(f"Starting simulation in asynchronous mode")
             self.initWorldSettingsAsynchronousMode()
         else:
-            self.logger.warn(f"Starting simulation in synchronous mode")
+            self.logger.info(f"Starting simulation in synchronous mode")
             self.initWorldSettingsSynchronousMode()
-
         pass
 
     
@@ -87,11 +86,18 @@ class BaseResearch(ClientUser):
         pass
 
     def initWorldSettingsSynchronousMode(self):
-        self.time_delta = 0.04
+        # fixed_delta_seconds <= max_substep_delta_time * max_substeps 
+        
         settings = self.world.get_settings()
-        # settings.substepping = False # https://carla.readthedocs.io/en/latest/python_api/#carlaworldsettings
+        settings.substepping = True # https://carla.readthedocs.io/en/latest/python_api/#carlaworldsettings
         settings.synchronous_mode = True # Enables synchronous mode
+        
+        # fixed_delta_seconds <= max_substep_delta_time * max_substeps 
+        self.time_delta = 0.04
         settings.fixed_delta_seconds = self.time_delta # Sets fixed time step
+        settings.max_substeps = 10 # Sets max substeps default 10
+        settings.max_substep_delta_time = 0.01 # Sets max substep delta time default 0.01
+        
         self.world.apply_settings(settings)
         self.configureMap()
         pass

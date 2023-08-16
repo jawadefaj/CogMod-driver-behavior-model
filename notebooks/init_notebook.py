@@ -5,8 +5,7 @@ try:
 except ValueError: # Already removed
     pass
 
-
-projectFolder = 'C:/AV/Carla/CARLA_0.9.13/WindowsNoEditor/PythonAPI/experiments'
+projectFolder = 'C:/Users/abjawad/Documents/cogmod-driver-behavior-model'
 # projectFolder = 'E:\\AV\\Carla\\CARLA_0.9.13\\WindowsNoEditor\\PythonAPI\\experiments'
 sys.path.append(str(projectFolder))
 os.chdir(projectFolder)

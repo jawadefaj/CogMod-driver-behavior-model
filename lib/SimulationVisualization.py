@@ -46,9 +46,8 @@ class SimulationVisualization(ClientUser):
     def onTick(self, world_snapshot):
         for agent in self.trackingAgent.values():
             self.drawAgentStatus(agent)
+        pass
 
-
-    #region unit functions
 
     def getRandomColor(self):
         r = random.randint(0, 255)
@@ -194,6 +193,15 @@ class SimulationVisualization(ClientUser):
                 self.drawPoint(location=location, size=0.05, life_time=life_time)
                 self.drawTextOnMap(location=carla.Location(location.x, location.y, 1), text=f"({round(location.x)}, {round(location.y)})", life_time=life_time)
 
+    # this fucntion draws the spawn points on the map and write the 
+    # coordinates of the spawn points on the map
+    def drawAllSpawnPointsWithText(self, life_time=0.0):
+        spawn_points = self.map.get_spawn_points()
+        for point in spawn_points:
+            location = point.location
+            self.drawPoint(location=location, size=0.05, life_time=life_time)
+            self.drawTextOnMap(location=carla.Location(location.x, location.y, 10), text=f"sp ({round(location.x)}, {round(location.y)})")
+        pass
 
     def drawSpectatorPoint(self):
         spectator = self.world.get_spectator()
