@@ -98,11 +98,11 @@ class DriverModifier():
                           'destination': destination_location}
 
         lane_following_subtask = agent_settings['driver_profile']['subtasks_parameters']['lane_following']
-        lane_following_subtask['desired_velocity'] = 50
-        lane_following_subtask['safe_time_headway'] = 0
-        lane_following_subtask['max_acceleration'] = 20
-        lane_following_subtask['comfort_deceleration'] = 0.5
-        lane_following_subtask['acceleration_exponent'] = 5
+        lane_following_subtask['desired_velocity'] = desired_velocity
+        lane_following_subtask['safe_time_headway'] = 0.5
+        lane_following_subtask['max_acceleration'] = 2.9
+        lane_following_subtask['comfort_deceleration'] = 1.67
+        lane_following_subtask['acceleration_exponent'] = 4
         lane_following_subtask['minimum_distance'] = 2
         lane_following_subtask['vehicle_length'] = 4
         return agent_settings
@@ -233,14 +233,14 @@ class ResearchDriverIDMvCogMod(BaseCogModResearch):
         self.scenario_state = ScenarioState.PENDING
         onTickers = [self.checkScenarioState, self.onTick]
         onEnders = [self.onEnd]
-        # self.simulator = Simulator(client=self.client,
-        #                            onTickers=onTickers,
-        #                            onEnders=onEnders,
-        #                            useThreads=False, 
-        #                            sleep=0.05,
-        #                            simulationMode=self.simulationMode)
+        self.simulator = Simulator(client=self.client,
+                                   onTickers=onTickers,
+                                   onEnders=onEnders,
+                                   useThreads=False, 
+                                   sleep=0.05,
+                                   simulationMode=self.simulationMode)
         
-        # self.simulator.run(maxTicks)             
+        self.simulator.run(maxTicks)             
         pass
     
     def onTick(self, tick):

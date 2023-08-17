@@ -162,7 +162,7 @@ class PIDLongitudinalController():
             _ie = 0.0
         
         
-        output = (self._k_p * error) + (self._k_d * _de) + (self._k_i * _ie)
+        output = (self._k_p * error) + (self._k_i * _ie) + (self._k_d * _de) 
         ret = np.clip(output, -1.0, 1.0)
         self.logger.info(f'target {round(target_speed,2)}, cur {round(current_speed,2)}, error {round(error,2)}, sum {round(sum(self._error_buffer),2)}, out {round(output,2)}, ret {ret}')
         return ret

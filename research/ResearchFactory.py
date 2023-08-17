@@ -8,6 +8,7 @@ from research.Research1v1NavPathModel import Research1v1NavPathModel
 from research.Research4v4 import Research4v4
 
 from .ResearchDriverIDMvCogMod import ResearchDriverIDMvCogMod
+from .ResearchCarFollowRepeat import ResearchCarFollowRepeat
 
 
 class ResearchFactory:
@@ -131,14 +132,31 @@ class ResearchFactory:
                                        n_repetitions=10,
                                        car_follow_filter = None):
         print("research chosen : ResearchDriverIDMvCogMod")
-        name = "ResearchDriverIDMvCogMod"
+        name = "Research_car_follow_prev_proj"
         logPath = os.path.join(output_dir, f"{name}.log")
         data_file_name = dateStr = date.now().strftime("%Y-%m-%d-%H-%M-%S")
         
         logger = LoggerFactory.getBaseLogger(name, defaultLevel=default_log_level, file=logPath)
         client = Utils.createClient(logger, host, port, timeout=timeout)
         
-        research = ResearchDriverIDMvCogMod(client=client,
+        # research = ResearchDriverIDMvCogMod(client=client,
+        #                                     simulationMode=simulation_mode,
+        #                                     map_name=map_name,
+        #                                     high_d_path=high_d_path,
+        #                                     stable_height_path=stable_height_path,
+        #                                     dataset_ids=dataset_ids,
+        #                                     pivot=pivot,
+        #                                     base_distance=base_distance,
+        #                                     idm_profile=idm_profile,
+        #                                     cogmod_profile=cogmod_profile,
+        #                                     n_repeat=n_repetitions,
+        #                                     car_follow_filter=car_follow_filter,
+        #                                     output_dir=output_dir,
+        #                                     log_level=default_log_level,
+        #                                     log_file_name=name,
+        #                                     data_file_name=data_file_name)
+        # research.run()
+        research = ResearchCarFollowRepeat(client=client,
                                             simulationMode=simulation_mode,
                                             map_name=map_name,
                                             high_d_path=high_d_path,
