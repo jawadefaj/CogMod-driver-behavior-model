@@ -104,20 +104,20 @@ class ResearchFactory:
         # logger.info(f"Create research Trajectory agent {name}")
         # research.run(maxTicks=maxTicks)
         
-        # research = ResearchCarFollowRepeat(client=client,
-        #                                    logLevel=defaultLogLevel,
-        #                                    outputDir="logs",
-        #                                    scenarioID=scenarioID,
-        #                                    pickedScenario=0,
-        #                                    nRepeat=10)
-        # research.run(maxTicks=maxTicks)
-        
-        research = ResearchIDM(client=client,
-                                logLevel=defaultLogLevel,
-                                outputDir="logs",
-                                scenarioID=scenarioID,
-                                pickedScenario=1,
-                                nRepeat=10)
+        research = ResearchCarFollowRepeat(client=client,
+                                           logLevel=defaultLogLevel,
+                                           outputDir="logs",
+                                           scenarioID=scenarioID,
+                                           pickedScenario=0,
+                                           nRepeat=10)
         research.run(maxTicks=maxTicks)
+        
+        # research = ResearchIDM(client=client,
+        #                         logLevel=defaultLogLevel,
+        #                         outputDir="logs",
+        #                         scenarioID=scenarioID,
+        #                         pickedScenario=1,
+        #                         nRepeat=10)
+        # research.run(maxTicks=maxTicks)
         
         pass
