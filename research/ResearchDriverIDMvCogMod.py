@@ -75,8 +75,8 @@ class DriverModifier():
                                                   vehicle_tracking_radius, 
                                                   driver_profile, 
                                                   ego_agent_df):
-        _map = preceding_agent.get_vehicle().get_world().get_map()
-        preceding_agent_location = preceding_agent.get_vehicle().get_location()
+        _map = preceding_agent.vehicle.get_world().get_map()
+        preceding_agent_location = preceding_agent.vehicle.get_location()
         nearest_waypoint_preceding_agent = _map.get_waypoint(preceding_agent_location, project_to_road=True)
         velocity_df = np.sqrt(ego_agent_df['xVelocity']**2 + ego_agent_df['yVelocity']**2)
         desired_velocity = velocity_df.max() # desired velocity at the beginning of the scenario
@@ -207,18 +207,16 @@ class ResearchDriverIDMvCogMod(BaseCogModResearch):
         # self.SetSpectator(preceding_agent.get_vehicle().get_location(), height=50)
         distance = self.trigger_distance + self.base_distance
         
-        print("cogmod profile ", self.cogmod_profile)
         ego_agent_settings = DriverModifier.change_cogmod_settings_pending_simulation(preceding_agent=preceding_agent,
                                                                                       spawn_distance=distance,
                                                                                       vehicle_tracking_radius=self.trigger_distance,
                                                                                       driver_profile=self.cogmod_profile,
                                                                                       ego_agent_df=self.ego_agent_df)
-        print("ego agent settings ", ego_agent_settings)
+        self.logger.info(f"current driver settings : {ego_agent_settings}")
         ego_agent = self.createCogModAgent(ego_agent_settings,
                                            loglevel=logging.INFO)
         
-        self.agent_list['ego'] = ego_agent
-        self.agent_list['preceding'] = preceding_agent
+        self.agent_list = {'ego': ego_agent, 'preceding': preceding_agent}
         self.isDriverChanged = False
         self.execution_num += 1
         pass
@@ -257,36 +255,36 @@ class ResearchDriverIDMvCogMod(BaseCogModResearch):
         ego_location = ego_vehicle.get_location()
         preceding_location = preceding_vehicle.get_location()
         
+        self.SetSpectator(ego_location, height=200)
+        
         # when we start the scneario we change the driver profile and reset the driver if the driverChanged is false
+        # if self.scenario_state == ScenarioState.START:
+        #     if self.isDriverChanged == False:
+        #         agent_settings = DriverModifier.change_cogmod_settings_start_simulation(agent_settings=self.cogmod_profile,
+        #                                                                                 ego_agent_df=self.ego_agent_df)
+        #         ego_agent.reset_driver(agent_settings, time_delta=0.04)
+        #         self.isDriverChanged = True
+        #         pass
+        #     ego_control = ego_agent.run_step(self.time_delta)
+        #     if ego_control is not None:
+        #         self.client.apply_batch_sync([carla.command.ApplyVehicleControl(ego_vehicle.id, ego_control)])
+        #         pass
         
-        if self.scenario_state == ScenarioState.START:
-            if self.isDriverChanged == False:
-                agent_settings = DriverModifier.change_cogmod_settings_start_simulation(agent_settings=self.cogmod_profile,
-                                                                                        ego_agent_df=self.ego_agent_df)
-                ego_agent.reset_driver(agent_settings, time_delta=0.04)
-                self.isDriverChanged = True
-                pass
-            ego_control = ego_agent.run_step(self.time_delta)
-            if ego_control is not None:
-                self.client.apply_batch_sync([carla.command.ApplyVehicleControl(ego_vehicle.id, ego_control)])
-                pass
-        
-        if self.scenario_state == ScenarioState.RUNNING:
-            ego_control = ego_agent.run_step(self.time_delta)
-            if ego_control is not None:
-                self.client.apply_batch_sync([carla.command.ApplyVehicleControl(ego_vehicle.id, ego_control)])
-                pass
-            frame = tick - self.frame_tracker + self.current_follow_scenario['start_frame']
-            preceding_agent.run_step(frame)
-            pass
+        # if self.scenario_state == ScenarioState.RUNNING:
+        #     ego_control = ego_agent.run_step(self.time_delta)
+        #     if ego_control is not None:
+        #         self.client.apply_batch_sync([carla.command.ApplyVehicleControl(ego_vehicle.id, ego_control)])
+        #         pass
+        #     frame = tick - self.frame_tracker + self.current_follow_scenario['start_frame']
+        #     preceding_agent.run_step(frame)
+        #     pass
         
         if self.scenario_state == ScenarioState.PENDING:
             ego_control = ego_agent.run_step(self.time_delta)
             if ego_control is not None:
                 self.client.apply_batch_sync([carla.command.ApplyVehicleControl(ego_vehicle.id, ego_control)])
                 pass
-            pass
-        self.SetSpectator(ego_agent.get_vehicle().get_location(), height=50)
+            
         # if self.scenario_state == ScenarioState.END:
         #     self.onEnd()
             
