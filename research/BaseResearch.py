@@ -35,7 +35,6 @@ class BaseResearch(ClientUser):
         self.time_delta = None
         self.mapManager = None
         self.visualizer = None
-        self.mapManager: MapManager = None
 
 
         self.initWorldSettings()
@@ -46,7 +45,8 @@ class BaseResearch(ClientUser):
 
     def configureMap(self):
         self.mapManager = MapManager(self.client)
-        self.mapManager.load(self.mapName, forceReload=True)
+        self.reset()
+        self.mapManager.load(self.mapName)
 
     def reset(self):
         # self.client.reload_world(False)

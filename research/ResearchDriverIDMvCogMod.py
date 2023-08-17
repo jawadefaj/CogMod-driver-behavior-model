@@ -98,7 +98,7 @@ class DriverModifier():
                           'destination': destination_location}
 
         lane_following_subtask = agent_settings['driver_profile']['subtasks_parameters']['lane_following']
-        lane_following_subtask['desired_velocity'] = desired_velocity
+        lane_following_subtask['desired_velocity'] = 50
         lane_following_subtask['safe_time_headway'] = 0
         lane_following_subtask['max_acceleration'] = 20
         lane_following_subtask['comfort_deceleration'] = 0.5
@@ -204,14 +204,16 @@ class ResearchDriverIDMvCogMod(BaseCogModResearch):
                                                              stable_height_dict=self.stable_height_dict,
                                                              laneID=self.laneID)
         self.world.tick()
-        self.SetSpectator(preceding_agent.get_vehicle().get_location(), height=50)
+        # self.SetSpectator(preceding_agent.get_vehicle().get_location(), height=50)
         distance = self.trigger_distance + self.base_distance
         
+        print("cogmod profile ", self.cogmod_profile)
         ego_agent_settings = DriverModifier.change_cogmod_settings_pending_simulation(preceding_agent=preceding_agent,
                                                                                       spawn_distance=distance,
                                                                                       vehicle_tracking_radius=self.trigger_distance,
                                                                                       driver_profile=self.cogmod_profile,
                                                                                       ego_agent_df=self.ego_agent_df)
+        print("ego agent settings ", ego_agent_settings)
         ego_agent = self.createCogModAgent(ego_agent_settings,
                                            loglevel=logging.INFO)
         
@@ -231,13 +233,14 @@ class ResearchDriverIDMvCogMod(BaseCogModResearch):
         self.scenario_state = ScenarioState.PENDING
         onTickers = [self.checkScenarioState, self.onTick]
         onEnders = [self.onEnd]
-        print(' ---------- simulation mode ', self.simulationMode)
-        self.simulator = Simulator(client=self.client,
-                                   onTickers=onTickers,
-                                   onEnders=onEnders,
-                                   simulationMode=self.simulationMode)
+        # self.simulator = Simulator(client=self.client,
+        #                            onTickers=onTickers,
+        #                            onEnders=onEnders,
+        #                            useThreads=False, 
+        #                            sleep=0.05,
+        #                            simulationMode=self.simulationMode)
         
-        self.simulator.run(maxTicks)             
+        # self.simulator.run(maxTicks)             
         pass
     
     def onTick(self, tick):
@@ -321,7 +324,7 @@ class ResearchDriverIDMvCogMod(BaseCogModResearch):
     
     
     def checkScenarioState(self, tick):
-        print('checkScenarioState ', self.scenario_state, tick)
+        # print('checkScenarioState ', self.scenario_state, tick)
         ego_agent = self.agent_list['ego']
         preceding_agent = self.agent_list['preceding']
         

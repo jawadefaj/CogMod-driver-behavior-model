@@ -136,7 +136,7 @@ class ResearchFactory:
         data_file_name = dateStr = date.now().strftime("%Y-%m-%d-%H-%M-%S")
         
         logger = LoggerFactory.getBaseLogger(name, defaultLevel=default_log_level, file=logPath)
-        client = Utils.createClient(logger, host, port)
+        client = Utils.createClient(logger, host, port, timeout=timeout)
         
         research = ResearchDriverIDMvCogMod(client=client,
                                             simulationMode=simulation_mode,
