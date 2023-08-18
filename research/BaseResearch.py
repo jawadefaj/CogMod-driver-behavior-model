@@ -45,7 +45,7 @@ class BaseResearch(ClientUser):
 
     def configureMap(self):
         self.mapManager = MapManager(self.client)
-        self.reset()
+        # self.mapManager.reload()
         self.mapManager.load(self.mapName)
 
     def reset(self):
@@ -87,7 +87,7 @@ class BaseResearch(ClientUser):
 
     def initWorldSettingsSynchronousMode(self):
         # fixed_delta_seconds <= max_substep_delta_time * max_substeps 
-        
+        self.configureMap()
         settings = self.world.get_settings()
         settings.substepping = True # https://carla.readthedocs.io/en/latest/python_api/#carlaworldsettings
         settings.synchronous_mode = True # Enables synchronous mode
@@ -99,7 +99,9 @@ class BaseResearch(ClientUser):
         settings.max_substep_delta_time = 0.01 # Sets max substep delta time default 0.01
         
         self.world.apply_settings(settings)
-        self.configureMap()
+        
+        self.world.tick()
+        print("world settings", self.world.get_settings())
         pass
 
     def tickOrWaitBeforeSimulation(self):

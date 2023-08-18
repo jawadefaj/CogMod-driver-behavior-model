@@ -8,7 +8,7 @@ from agents.vehicles.CogMod.Settings.DriverSettings import driver_profile
 
 def DriverResearch():
 
-    max_ticks = 10000
+    max_ticks = 100000
     host = "127.0.0.1"
     port = 2000
     timeout=10
@@ -27,7 +27,7 @@ def DriverResearch():
     idm_driver_profile = driver_profile['idm1'] # we simulate idm once
     
     cogmod_driver_profile =  driver_profile['cogmod1']
-    n_repeat = 10
+    n_repeat = 40
     
     car_follow_filter = {
                             'ego_type': 'Car',
