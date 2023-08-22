@@ -22,12 +22,12 @@ def DriverResearch():
     dataset_ids = ['01']
     stable_height_path = r"C:\\Users\\abjawad\\Documents\\GitHub\\cogmod-driver-behavior-model\\settings\\stable_height.csv"
     pivot = carla.Transform(carla.Location(x=0, y=-22, z=0))
-    base_distance = 800
+    base_distance = 200
     
     idm_driver_profile = driver_profile['idm1'] # we simulate idm once
     
     cogmod_driver_profile =  driver_profile['cogmod1']
-    n_repeat = 40
+    n_repeat = 2
     
     car_follow_filter = {
                             'ego_type': 'Car',

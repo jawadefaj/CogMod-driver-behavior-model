@@ -132,7 +132,7 @@ class ResearchFactory:
                                        n_repetitions=10,
                                        car_follow_filter = None):
         print("research chosen : ResearchDriverIDMvCogMod")
-        name = "Research_IDM1_COG40_DATA1"
+        name = "Research_IDM1_COG2_DATA"
         logPath = os.path.join(output_dir, f"{name}.log")
         # data_file_name = date.now().strftime("%Y-%m-%d-%H-%M-%S")
         data_file_name = name

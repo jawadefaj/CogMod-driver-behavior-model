@@ -65,7 +65,7 @@ class DriverModifier():
         preceding_agent_location = preceding_agent.vehicle.get_location()
         nearest_waypoint_preceding_agent = _map.get_waypoint(preceding_agent_location, project_to_road=True)
         velocity_df = np.sqrt(ego_agent_df['xVelocity']**2 + ego_agent_df['yVelocity']**2)
-        desired_velocity = velocity_df.max() # desired velocity at the beginning of the scenario
+        desired_velocity = velocity_df.iloc[0] # desired velocity at the beginning of the scenario
         
         local_map = driver_profile['local_map']
         local_map['vehicle_tracking_radius'] = vehicle_tracking_radius
@@ -103,7 +103,7 @@ class DriverModifier():
         preceding_agent_location = preceding_agent.vehicle.get_location()
         nearest_waypoint_preceding_agent = _map.get_waypoint(preceding_agent_location, project_to_road=True)
         velocity_df = np.sqrt(ego_agent_df['xVelocity']**2 + ego_agent_df['yVelocity']**2)
-        desired_velocity = velocity_df.max() # desired velocity at the beginning of the scenario
+        desired_velocity = velocity_df.iloc[0] # desired velocity at the beginning of the scenario
         
         local_map = driver_profile['local_map']
         local_map['vehicle_tracking_radius'] = vehicle_tracking_radius
@@ -305,6 +305,7 @@ class ResearchDriverIDMvCogMod(BaseCogModResearch):
         # change driver settings
         if self.scenario_state == ScenarioState.RUNNING:
             if self.isDriverChanged == False:
+                ego_agent.vehicle.disable_constant_velocity()
                 agent_settings = DriverModifier.change_driver_settings_running_simulation(agent_settings=self.cogmod_profile,
                                                                                         ego_agent_df=self.ego_agent_df)
                 ego_agent.reset_driver(agent_settings, time_delta=0.04)
@@ -337,13 +338,13 @@ class ResearchDriverIDMvCogMod(BaseCogModResearch):
         
         if self.execution_num == self.n_repeat:
             self.execution_num = 0
-            if self.current_scenario_index < len(self.filtered_follow_scenario_meta_df) - 1:
-                self.current_scenario_index += 1
-            else:
-                self.logger.info(f'follow meta after simulation done {self.filtered_follow_scenario_meta_df}')
-                self.data_collector.saveCSV(self.data_file_name, self.outputDir)
-                self.logger.info("simulation ending because all execution competed")
-                exit()
+            # if self.current_scenario_index < len(self.filtered_follow_scenario_meta_df) - 1:
+            #     self.current_scenario_index += 1
+            # else:
+            self.logger.info(f'follow meta after simulation done {self.filtered_follow_scenario_meta_df}')
+            self.data_collector.saveCSV(self.data_file_name, self.outputDir)
+            self.logger.info("simulation ending because all execution competed")
+            exit()
         
         self.create_simulation(self.current_scenario_index)
         self.logger.info(f"restart scenario {self.execution_num}, {self.current_scenario_index}")
@@ -425,7 +426,7 @@ class ResearchDriverIDMvCogMod(BaseCogModResearch):
         
         distance = ego_location.distance(preceding_location)
         
-        self.logger.info(f"ego vel {ego_velocity}, target {target_velocity}, distance {distance}")
+        self.logger.info(f"ego vel {round(ego_velocity, 2)}, target {target_velocity}, distance {round(distance, 2)}")
         # none of the agent is alive anymore
         if ego_agent is None or preceding_agent is None:
             self.scenario_state = ScenarioState.END
