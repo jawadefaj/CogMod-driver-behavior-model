@@ -25,7 +25,9 @@ import pandas as pd
 from lib.MapManager import MapNames
 from agents.pedestrians.soft import NavPointLocation, NavPointBehavior, LaneSection, Direction, NavPath
 
-class SettingBasedResearch(BaseResearch):
+from lib.highD import HighD
+
+class SettingHighDResearch(BaseResearch):
     
     def __init__(self, 
                  name:str,
@@ -34,9 +36,7 @@ class SettingBasedResearch(BaseResearch):
                  logLevel="INFO", 
                  outputDir:str = "logs", 
                  simulationMode = SimulationMode.ASYNCHRONOUS,
-                 settingsId = "setting1",
-                 stats=False,
-                 maxStepsPerCrossing=200):
+                 filterSettings = None):
 
 
         super().__init__(name=name, 
@@ -46,42 +46,30 @@ class SettingBasedResearch(BaseResearch):
                          outputDir=outputDir,
                          simulationMode=simulationMode)
 
-        settings = None
-        if mapName == MapNames.circle_t_junctions:
-            settings = circular_t_junction_settings
-        elif mapName == MapNames.Town02_Opt:
-            settings = town02_settings
-        elif mapName == MapNames.Town03_Opt:
-            settings = town03_settings
-        elif mapName == MapNames.varied_width_lanes:
-            settings = varied_width_lanes_settings
+        self.filterSettings = filterSettings
+        if mapName == MapNames.HighWay_Ring:
+            self.logger.info("HighDResearch: setting up for HighWay_Ring")
         else:
             raise Exception(f"Map {mapName} is missing settings")
-        self.settingsManager = SettingsManager(self.client, settings)
-
-        self.pedFactory = PedestrianFactory(self.client, visualizer=self.visualizer, time_delta=self.time_delta)
+        
         self.vehicleFactory = VehicleFactory(self.client, visualizer=self.visualizer)
 
-        self.episodeNumber = 0
-        self.episodeTimeStep = 0
-        self.stats = stats
-        self.maxStepsPerCrossing = maxStepsPerCrossing
-        self.settingsId = settingsId
-    
+        # self.episodeNumber = 0
+        # self.episodeTimeStep = 0
+        # self.stats = stats
+        # self.maxStepsPerCrossing = maxStepsPerCrossing
+        # self.settingsId = settingsId
+
     pass
 
 
 
     def setup(self):
 
-        
-        # self.settingsManager.load("setting3")
-        # return 
-        self.settingsManager.load(self.settingsId)
-
         self.simulator = None # populated when run
 
         # change spectator if in setting
-        spectatorSettings = self.settingsManager.getSpectatorSettings()
-        if spectatorSettings is not None:
-            self.mapManager.setSpectator(spectatorSettings)
+        # spectatorSettings = self.settingsManager.getSpectatorSettings()
+        # if spectatorSettings is not None:
+        #     self.mapManager.setSpectator(spectatorSettings)
+        

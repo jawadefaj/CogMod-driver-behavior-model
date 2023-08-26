@@ -11,6 +11,7 @@ from datetime import date
 
 from agents.pedestrians.soft import Direction, LaneSection, NavPath, NavPoint
 from settings.SourceDestinationPair import SourceDestinationPair
+from research.SettingsHighDResearch import SettingHighDResearch
 
 from .BaseResearch import BaseResearch
 from settings.circular_t_junction_settings import circular_t_junction_settings
@@ -30,7 +31,7 @@ import pandas as pd
 from lib.MapManager import MapNames
 from agents.pedestrians.soft import NavPointLocation, NavPointBehavior, LaneSection, Direction, NavPath
 
-class ResearchIDM(BaseResearch):
+class ResearchIDM(SettingHighDResearch):
     
     def __init__(self, 
                  client: carla.Client, 
@@ -38,9 +39,7 @@ class ResearchIDM(BaseResearch):
                  logLevel="INFO", 
                  outputDir:str = "logs", 
                  simulationMode = SimulationMode.ASYNCHRONOUS,
-                 settingsId = "setting1",
-                 stats=False,
-                 maxStepsPerCrossing=200
+                 filterSettings = None,
                  ):
 
         self.name = "ResearchHighD"
@@ -51,9 +50,7 @@ class ResearchIDM(BaseResearch):
                          logLevel=logLevel, 
                          outputDir=outputDir,
                          simulationMode=simulationMode,
-                         settingsId=settingsId,
-                         stats=stats,
-                         maxStepsPerCrossing=maxStepsPerCrossing
+                         filterSettings=filterSettings,
                          )
         
         # self.walkers: List[carla.Walker] = []

@@ -119,13 +119,13 @@ class ResearchFactory:
                             output_dir="logs", 
                             map=MapNames.circle_t_junctions,
                             simulationMode = SimulationMode.ASYNCHRONOUS,
-                            settingsId = "setting1",
+                            filterSettings = None,
                             stats=True
-                            ) -> Research4v4:
+                            ) -> ResearchIDM:
 
-        print(f"research chosen : R4v4 with host: {host}, port: {port}, log level: {defaultLogLevel}, output directory: {output_dir}")
+        print(f"research chosen : ResearchIDM with host: {host}, port: {port}, log level: {defaultLogLevel}, output directory: {output_dir}")
         port = int(port)
-        name = "Research4v4"
+        name = "ResearchIDM"
         logPath = os.path.join(output_dir, f"{name}.log")
         logger = LoggerFactory.getBaseLogger(name, defaultLevel=defaultLogLevel, file=logPath)
         client = Utils.createClient(logger, host, port)
@@ -134,8 +134,7 @@ class ResearchFactory:
                          logLevel=defaultLogLevel, 
                          outputDir=output_dir,
                          simulationMode=simulationMode, 
-                         settingsId=settingsId,
-                         stats=stats
+                         filterSettings=filterSettings,
                          )
-
+        exit('done')
         return research

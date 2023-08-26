@@ -46,9 +46,9 @@ class SimulationVisualization(ClientUser):
     def onTick(self, world_snapshot):
         for agent in self.trackingAgent.values():
             self.drawAgentStatus(agent)
+        pass
 
-
-    #region unit functions
+   
 
     def getRandomColor(self):
         r = random.randint(0, 255)

@@ -6,6 +6,10 @@ import click
 from research import ResearchFactory
 from lib import MapNames
 
+filterSettings = {
+    'ego_type': 'car',
+    'preceding_type': 'car',
+}
 
 @click.command()
 @click.option(
@@ -16,7 +20,7 @@ from lib import MapNames
     help='Number of ticks the simulator will run'
     )
 def reasearch_idm(max_ticks):
-    research = ResearchFactory.createResearchIDM(map=MapNames.HighWay_Ring, defaultLogLevel=logging.WARN, settingsId="setting1")
+    research = ResearchFactory.createResearchIDM(map=MapNames.HighWay_Ring, defaultLogLevel=logging.WARN, filterSettings=filterSettings)
     research.maxStepsPerCrossing = max_ticks
     research.run(maxTicks=max_ticks)
 
