@@ -6,6 +6,7 @@ from lib import ClientUser, LoggerFactory, MapManager, MapNames, SimulationVisua
 from research import *
 from research.Research1v1NavPathModel import Research1v1NavPathModel
 from research.Research4v4 import Research4v4
+from research.ResearchIDM import ResearchIDM
 # from research.SimulationMode import SimulationMode
 
 
@@ -99,6 +100,36 @@ class ResearchFactory:
         logger = LoggerFactory.getBaseLogger(name, defaultLevel=defaultLogLevel, file=logPath)
         client = Utils.createClient(logger, host, port)
         research = Research4v4(client, 
+                         mapName=map, 
+                         logLevel=defaultLogLevel, 
+                         outputDir=output_dir,
+                         simulationMode=simulationMode, 
+                         settingsId=settingsId,
+                         stats=stats
+                         )
+
+        return research
+    
+    
+    @staticmethod
+    def createResearchIDM(
+                            host="127.0.0.1", 
+                            port=2000, 
+                            defaultLogLevel=logging.INFO, 
+                            output_dir="logs", 
+                            map=MapNames.circle_t_junctions,
+                            simulationMode = SimulationMode.ASYNCHRONOUS,
+                            settingsId = "setting1",
+                            stats=True
+                            ) -> Research4v4:
+
+        print(f"research chosen : R4v4 with host: {host}, port: {port}, log level: {defaultLogLevel}, output directory: {output_dir}")
+        port = int(port)
+        name = "Research4v4"
+        logPath = os.path.join(output_dir, f"{name}.log")
+        logger = LoggerFactory.getBaseLogger(name, defaultLevel=defaultLogLevel, file=logPath)
+        client = Utils.createClient(logger, host, port)
+        research = ResearchIDM(client, 
                          mapName=map, 
                          logLevel=defaultLogLevel, 
                          outputDir=output_dir,

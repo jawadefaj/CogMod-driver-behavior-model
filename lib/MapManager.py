@@ -28,6 +28,8 @@ class MapNames(Enum):
     Town06_Opt = 'Town06_Opt'
     Town07_Opt = 'Town07_Opt'
     Town10HD_Opt = 'Town10HD_Opt'
+    
+    HighWay_Ring = 'HighWay_Ring'
 
 
 class MapManager(ClientUser):
