@@ -45,23 +45,6 @@ class HighD:
                 'rightPrecedingId', 'rightAlongsideId', 'rightFollowingId'
             ]]
             combined_dfs.append(combined_df)
-
+        # combine the list in one dataframe 
+        combined_dfs = pd.concat(combined_dfs)
         return combined_dfs
-
-    def get_dataframe_tuple(self, id):
-        return self.dfs[id-1]
-
-    def get_image(self, id):
-        return self.images[id-1]
-
-    def get_combined_dataframe(self, id):
-        return self.combined_dfs[id-1]
-
-    def get_images(self):
-        return self.images
-
-    def get_combined_dataframes(self):
-        return self.combined_dfs
-    
-    def get_scenario_meta(self, id):
-        return self.dfs[0][id-1]
