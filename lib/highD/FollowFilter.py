@@ -89,7 +89,7 @@ class FollowFilter():
     # this function first remove scenarios with high vy oscillation
     # then it translates the scenario wrt initial (ego_x, ego_y)
     # than remove scenarios 
-    def process_vehicle_follow_scenario(follow_meta, yOscillationRange=None, maxDistance=None):
+    def process_vehicle_follow_scenario(follow_meta, yOscillationRange=None, maxDistance=None, removePrecedingVelGreaterThanEgoVel=False):
         follow_meta_copy = follow_meta.copy()
         if yOscillationRange is not None:
             low, high = yOscillationRange
@@ -97,6 +97,12 @@ class FollowFilter():
         follow_meta_copy = FollowFilter.translate_follow_meta_wrt_ego_xy(follow_meta_copy)
         if maxDistance is not None:
             follow_meta_copy = FollowFilter.filter_follow_meta_by_initial_distance(follow_meta_copy, maxDistance)
+        if removePrecedingVelGreaterThanEgoVel:
+            follow_meta_copy = FollowFilter.remove_scenario_precedingVel_greater_than_egoVel(follow_meta_copy)
+        nPrevScenario = len(follow_meta.scenario_id.unique())
+        nCurrScenario = len(follow_meta_copy.scenario_id.unique())
+        removedScenario = nPrevScenario - nCurrScenario
+        print(f'removed {removedScenario} scenarios from {nPrevScenario} scenarios')
         return follow_meta_copy
     
     def remove_vy_oscillation_from_follow_meta(follow_meta, low, high):
@@ -140,6 +146,14 @@ class FollowFilter():
             df = new_follow_meta[new_follow_meta['scenario_id'] == scenario]
             distance = np.sqrt((df['ego_x'].iloc[0] - df['preceding_x'].iloc[0])**2 + (df['ego_y'].iloc[0] - df['preceding_y'].iloc[0])**2)
             if distance > max_distance:
+                follow_meta = follow_meta[follow_meta['scenario_id'] != scenario]
+        return follow_meta
+    
+    def remove_scenario_precedingVel_greater_than_egoVel(follow_meta):
+        new_follow_meta = follow_meta.copy()
+        for scenario in new_follow_meta.scenario_id.unique():
+            df = new_follow_meta[new_follow_meta['scenario_id'] == scenario]
+            if df['preceding_vx'].iloc[0] > df['ego_vx'].iloc[0]:
                 follow_meta = follow_meta[follow_meta['scenario_id'] != scenario]
         return follow_meta
     

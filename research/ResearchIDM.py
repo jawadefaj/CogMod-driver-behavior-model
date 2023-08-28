@@ -25,6 +25,7 @@ from agents.pedestrians.factors import Factors
 from agents.vehicles import VehicleFactory
 
 from agents.navigation.behavior_agent import BehaviorAgent
+from agents.navigation.idm_agent import IDMAgent
 from lib import Simulator, EpisodeSimulator, SimulationMode, EpisodeTrajectoryRecorder, ActorClass
 from lib import Utils
 import pandas as pd
@@ -53,20 +54,32 @@ class ResearchIDM(SettingHighDResearch):
                          filterSettings=filterSettings,
                          )
         
-        # self.walkers: List[carla.Walker] = []
-        # self.walkerAgents: List[PedestrianAgent] = []
+
         self.vehicles: List[carla.Vehicle] = []
-        self.vehicleAgents: List[BehaviorAgent] = []
+        self.vehicleAgents: List[IDMAgent] = []
 
-        # self._navPath = None
-
+        self.curScenario = self.follow_meta.iloc[0]
+        
         self.setup()
 
     # filter the highD dataset
     def setup(self):
-        # super().setup()
+        super().setup()
+        
         pass
 
+    def createIDMAgent(self, 
+                       spawnLocation: carla.Location, 
+                       destination: carla.Location,
+                       targetSpeed: float = 10,):
+        self.mapManager.spawnActor(ActorClass.Vehicle, spawnLocation)
+        source_destination_pair = SourceDestinationPair(source=spawnLocation, destination=destination)
+        
+        
+        
+        
+        pass
+    
     
     def createDynamicAgents(self):
 
@@ -83,7 +96,7 @@ class ResearchIDM(SettingHighDResearch):
         pass
 
     def recreateDynamicAgents(self):
-       
+           
         # self.vehicleAgents.clear()
         # self.logger.info('\ndestroying  vehicles')
         # self.vehicleFactory.reset()
@@ -100,10 +113,13 @@ class ResearchIDM(SettingHighDResearch):
     
 
     
-    def createVehicle(self, vehicleSetting: SourceDestinationPair) -> Tuple[carla.Vehicle, BehaviorAgent]:
-        maxSpeed = random.choice([10, 14, 18, 22])
-        return super().createVehicle(vehicleSetting, maxSpeed=maxSpeed)
-    
+    def createVehicle(self, vehicleSetting: SourceDestinationPair) -> Tuple[carla.Vehicle, IDMAgent]:
+        
+        vehicle_spawn_wp = self.locationToVehicleSpawnPoint(vehicleSetting.source)
+        vehicle_destimation_wp = self.locationToVehicleSpawnPoint(vehicleSetting.destination)
+        
+        vehicle = self.vehicleFactory.spawn(vehicle_spawn_wp)
+        pass
 
 
 

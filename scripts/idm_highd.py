@@ -5,11 +5,10 @@ import click
 
 from research import ResearchFactory
 from lib import MapNames
+from lib.SimulationMode import SimulationMode
 
-filterSettings = {
-    'ego_type': 'car',
-    'preceding_type': 'car',
-}
+
+filtered_follow_meta_path = "C:\\Users\\abjawad\\Documents\\GitHub\\cogmod-driver-behavior-model\\lib\\highD\\follow_meta.csv"
 
 @click.command()
 @click.option(
@@ -20,8 +19,10 @@ filterSettings = {
     help='Number of ticks the simulator will run'
     )
 def reasearch_idm(max_ticks):
-    research = ResearchFactory.createResearchIDM(map=MapNames.HighWay_Ring, defaultLogLevel=logging.WARN, filterSettings=filterSettings)
-    research.maxStepsPerCrossing = max_ticks
+    research = ResearchFactory.createResearchIDM(map=MapNames.HighWay_Ring, 
+                                                 defaultLogLevel=logging.WARN, 
+                                                 filterSettings=filtered_follow_meta_path,
+                                                 simulationMode=SimulationMode.SYNCHRONOUS)
     research.run(maxTicks=max_ticks)
 
 

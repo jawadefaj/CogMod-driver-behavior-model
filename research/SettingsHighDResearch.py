@@ -16,6 +16,7 @@ from settings.town02_settings import town02_settings
 from settings.town03_settings import town03_settings
 from settings.varied_width_lanes_settings import varied_width_lanes_settings
 from settings import SettingsManager
+
 from agents.pedestrians import PedestrianFactory
 from agents.pedestrians.factors import Factors
 from agents.vehicles import VehicleFactory
@@ -53,6 +54,7 @@ class SettingHighDResearch(BaseResearch):
             raise Exception(f"Map {mapName} is missing settings")
         
         self.vehicleFactory = VehicleFactory(self.client, visualizer=self.visualizer)
+        self.follow_meta = pd.read_csv(self.filterSettings)
 
         # self.episodeNumber = 0
         # self.episodeTimeStep = 0
@@ -73,3 +75,12 @@ class SettingHighDResearch(BaseResearch):
         # if spectatorSettings is not None:
         #     self.mapManager.setSpectator(spectatorSettings)
         
+    def locationToVehicleSpawnPoint(self, location: carla.Location) -> carla.Transform:
+    
+        # find a way point
+        waypoint = self.map.get_waypoint(location, project_to_road=True, lane_type=carla.LaneType.Driving)
+        if waypoint is None:
+            msg = f"{self.name}: Cannot create way point near {location}"
+            self.error(msg)
+        transform = carla.Transform(location = waypoint.transform.location + carla.Location(z=1), rotation = waypoint.transform.rotation)
+        return transform
