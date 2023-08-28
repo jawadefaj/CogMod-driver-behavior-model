@@ -2,10 +2,11 @@ import carla
 import math
 import random
 from shapely.geometry import LineString, Point
-from typing import List, Dict
+from typing import List, Dict, Optional, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import copy
+
 
 red = carla.Color(255, 0, 0)
 green = carla.Color(0, 255, 0)
@@ -22,7 +23,7 @@ class Utils:
 
     #region simulation setup
     @staticmethod
-    def createClient(logger, host, port, timeout=5.0):
+    def createClient(logger, host, port, timeout=15.0):
         client = carla.Client(host, port)
         client.set_timeout(timeout)
 
@@ -35,7 +36,7 @@ class Utils:
         return client
 
     @staticmethod
-    def getTimeDelta(world):
+    def getTimeDelta(world: carla.World):
         settings = world.get_settings()
         # print("Utils->getTimeDelta:", settings)
         return settings.fixed_delta_seconds 
@@ -64,10 +65,6 @@ class Utils:
         
         return Utils.getMagnitude(diff)
     
-    @staticmethod 
-    def distanceToVehicle(fromLocation: carla.Location, vehicle: carla.Vehicle):
-        return fromLocation.distance_2d(vehicle.get_location()) - vehicle.bounding_box.extent.x
-
         
     @staticmethod
     def getMagnitude(vector: carla.Vector3D):
@@ -118,8 +115,16 @@ class Utils:
         return np.arccos(np.clip(np.dot(d1, d2), -1.0, 1.0))
 
     @staticmethod
-    def projectAonB2D(a: carla.Vector3D, b: carla.Vector3D) -> float:
+    def projectAonB2DScalar(a: carla.Vector3D, b: carla.Vector3D) -> float:
+        b = carla.Vector3D(x=b.x, y=b.y, z=0) # otherwise the length will be wrong
         return (a.dot_2d(b) / b.length())
+
+    @staticmethod
+    def projectAonB2D(a: carla.Vector3D, b: carla.Vector3D) -> float:
+        scalar = Utils.projectAonB2DScalar(a, b)
+        bDirection = carla.Vector3D(x=b.x, y=b.y, z=0).make_unit_vector() # otherwise the length will be wrong
+        return bDirection * scalar
+
 
 
     @staticmethod
@@ -453,3 +458,87 @@ class Utils:
 
 
     #endregion
+
+    # region waypoints
+    @staticmethod
+    def wayPointsSameDirection(waypoint1: carla.Waypoint, waypoint2: carla.Waypoint):
+        """This only works if map has strict opendrive structure
+
+        Args:
+            waypoint1 (carla.Waypoint): _description_
+            waypoint2 (carla.Waypoint): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        return waypoint1.lane_id * waypoint2.lane_id > 0
+    
+    #endregion
+
+    #region sidewalks
+
+    def getNearestSidewalk(source: carla.Location, sidewalks: List[carla.LabelledPoint]) -> Optional[carla.LabelledPoint]:
+        if len(sidewalks) == 0:
+            return None
+
+        nearestSidewalk = sidewalks[0]
+        nearestDistance = source.distance_2d(nearestSidewalk.location)
+
+        for sidewalk in sidewalks:
+            distance = source.distance_2d(sidewalk.location)
+            if distance < nearestDistance:
+                nearestDistance = distance
+                nearestSidewalk = sidewalk
+        
+        return nearestSidewalk
+
+    def getSideWalksOnRay(world: carla.World, source: carla.Location, dest: carla.Location, adjustZ=True) -> List[carla.LabelledPoint]:
+        if adjustZ:
+            source.z = 0.05
+            dest.z = 0.05
+
+        labeledObjects = world.cast_ray(source, dest)
+        # print(labeledObjects)
+        sidewalks = []
+        for lb in labeledObjects:
+            if lb.label == carla.CityObjectLabel.Sidewalks:
+                sidewalks.append(lb)
+        
+        return sidewalks
+
+    
+    @staticmethod
+    def getSideWalks(world: carla.World, waypoint: carla.Waypoint, rayLength: float=20) -> Tuple[carla.Location, carla.Location]:
+        """Returns left and right sidewalk locations if the waypoint. left and rigt are relative to the direction of the waypoint. 
+
+        Args:
+            waypoint (carla.Waypoint): _description_
+            rayLength (float): length of rays to cast on the sides. 
+
+        Returns:
+            Tuple[carla.Location, carla.Location]: left and right sidewalk locations
+        """
+
+        sourceLocation = carla.Location(x = waypoint.transform.location.x, y = waypoint.transform.location.y, z=0.05)
+        rightVector = waypoint.transform.get_right_vector() * rayLength
+        leftVector = -1 * rightVector * rayLength
+        
+        # rightLocation = carla.Location(x = rightVector.x, y = rightVector.y, z=0.05)
+        # leftLocation = carla.Location(x = leftVector.x, y = leftVector.y, z=0.05)
+
+        rightLocation = sourceLocation + rightVector
+        leftLocation = sourceLocation + leftVector
+        
+        rightSidewalks = Utils.getSideWalksOnRay(world, sourceLocation, rightLocation)
+        leftSidewalks = Utils.getSideWalksOnRay(world, sourceLocation, leftLocation)
+
+        nearestLeftSidewalk = Utils.getNearestSidewalk(sourceLocation, leftSidewalks)
+        nearestRightSidewalk = Utils.getNearestSidewalk(sourceLocation, rightSidewalks)
+
+        return nearestLeftSidewalk, nearestRightSidewalk
+
+
+        # cast ray on the left and the right
+
+    
+    # endregion

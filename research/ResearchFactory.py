@@ -54,10 +54,12 @@ class ResearchFactory:
                             port=2000, 
                             defaultLogLevel=logging.INFO, 
                             output_dir="logs", 
-                            map=MapNames.circle_t_junctions,
+                            map=MapNames.varied_width_lanes,
                             simulationMode = SimulationMode.ASYNCHRONOUS,
                             settingsId = "setting1",
-                            stats=True
+                            stats=True,
+                            record=False,
+                            scenario = "psi-0002",
                             ) -> Research1v1NavPathModel:
 
         print(f"research chosen : R1v1 with host: {host}, port: {port}, log level: {defaultLogLevel}, output directory: {output_dir}")
@@ -72,7 +74,9 @@ class ResearchFactory:
                          outputDir=output_dir,
                          simulationMode=simulationMode, 
                          settingsId=settingsId,
-                         stats=stats
+                         stats=stats,
+                         record=record,
+                         scenario=scenario
                          )
         
 
@@ -87,10 +91,12 @@ class ResearchFactory:
                             port=2000, 
                             defaultLogLevel=logging.INFO, 
                             output_dir="logs", 
-                            map=MapNames.circle_t_junctions,
+                            map=MapNames.varied_width_lanes,
                             simulationMode = SimulationMode.ASYNCHRONOUS,
                             settingsId = "setting1",
-                            stats=True
+                            stats=True,
+                            record=False,
+                            scenario = "psi-0002"
                             ) -> Research4v4:
 
         print(f"research chosen : R4v4 with host: {host}, port: {port}, log level: {defaultLogLevel}, output directory: {output_dir}")
@@ -105,7 +111,9 @@ class ResearchFactory:
                          outputDir=output_dir,
                          simulationMode=simulationMode, 
                          settingsId=settingsId,
-                         stats=stats
+                         stats=stats,
+                         record=record,
+                         scenario=scenario
                          )
 
         return research

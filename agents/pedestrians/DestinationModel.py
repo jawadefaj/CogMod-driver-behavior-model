@@ -220,6 +220,7 @@ class DestinationModel(ForceModel):
                 force = self.navPathModel.calculateForce()
                 if force is not None:
                     return force
+                    # return self.clipForce(force)
 
 
         # self.agent.logger.warn(f"Collecting state from {self.name}")
@@ -230,11 +231,13 @@ class DestinationModel(ForceModel):
         # self.calculateNextDestination()
         self.nextDestination # updates if required. Do not comment it out
 
+        self.agent.logger.debug(f"no force calculating old destination force towads {self.nextDestination}")
+        self.agent.visualizer.drawPoint(self.nextDestination, color=(0, 255, 0), life_time=5)
         force = self.calculateForceForDesiredVelocity()
 
         # now clip force.
         
-        return self.clipForce(force)
+        return self.clipForce(force) # if we clip, it's dangerous, if we don't clip, it's also dangerous.
 
 
     

@@ -9,7 +9,7 @@ import numpy as np
 import json
 from datetime import date
 
-from agents.pedestrians.soft import Direction, LaneSection, NavPath, NavPoint
+from agents.pedestrians.soft import *
 from research.SettingBasedResearch import SettingBasedResearch
 from settings.SourceDestinationPair import SourceDestinationPair
 
@@ -35,13 +35,15 @@ class Research4v4(SettingBasedResearch):
     
     def __init__(self, 
                  client: carla.Client, 
-                 mapName=MapNames.circle_t_junctions, 
+                 mapName=MapNames.varied_width_lanes, 
                  logLevel="INFO", 
                  outputDir:str = "logs", 
                  simulationMode = SimulationMode.ASYNCHRONOUS,
                  settingsId = "setting1",
                  stats=False,
-                 maxStepsPerCrossing=200
+                 maxStepsPerCrossing=200,
+                 navPathFilePath="data/navpath/nav_path_straight_road.json",
+                 scenario = "psi-0002",
                  ):
 
         self.name = "Research4v4"
@@ -62,6 +64,8 @@ class Research4v4(SettingBasedResearch):
         self.vehicles: List[carla.Vehicle] = []
         self.vehicleAgents: List[BehaviorAgent] = []
 
+        self.scenario = scenario
+        self.navPathFilePath = navPathFilePath
         self._navPath = None
 
         self.setup()
@@ -69,75 +73,36 @@ class Research4v4(SettingBasedResearch):
     def setup(self):
         super().setup()
 
+    
+    def reset(self):
+        """Only used for episodic simulator
+        """
+        self.logger.info(f"Resetting environment")
+        # self.pedFactory.reset()
+        # self.vehicleFactory.reset()
+        self.destoryActors()
+
+        super().reset()
+
+        self.episodeNumber += 1
+        self.episodeTimeStep = 0
+        self.createDynamicAgents()
+        self.setupSimulator(episodic=True)
+
+        self.logger.warn(f"started episode {self.episodeNumber}")
+
         
     @property
-    def navPath(self):
+    def navPath(self) -> NavPath:
         if self._navPath is None:
-            point1 = NavPoint(
-                NavPointLocation(
-                    laneId=-1,
-                    laneSection=LaneSection.LEFT,
-                    distanceToEgo=24.0, 
-                    distanceToInitialEgo=24.0, 
-                ),
-                NavPointBehavior(
-                    speed=1,
-                    direction=Direction.LR
-                )
-            )
+            # navPaths = self.settingsManager.getNavPaths(self.navPathFilePath)
+            # self._navPath = random.choice(navPaths)
+            
+            # self._navPath = navPaths[1] # just for testing
+            self._navPath = self.settingsManager.getNavPath(self.navPathFilePath, self.scenario)
 
-            point2 = NavPoint(
-                NavPointLocation(
-                    laneId=-1,
-                    laneSection=LaneSection.MIDDLE,
-                    distanceToEgo=7.0, 
-                    distanceToInitialEgo=25.0, 
-                ),
-                NavPointBehavior(
-                    speed=0.5,
-                    direction=Direction.LR
-                )
-            )
-
-            point3 = NavPoint(
-                NavPointLocation(
-                    laneId=-1,
-                    laneSection=LaneSection.MIDDLE,
-                    distanceToEgo=1.0, 
-                    distanceToInitialEgo=25.0, 
-                ),
-                NavPointBehavior(
-                    speed=0.1,
-                    direction=Direction.LR
-                )
-            )
-
-
-            point4 = NavPoint(
-                NavPointLocation(
-                    laneId=0,
-                    laneSection=LaneSection.LEFT,
-                    distanceToEgo=-1, 
-                    distanceToInitialEgo=25.0, 
-                ),
-                NavPointBehavior(
-                    speed=1,
-                    direction=Direction.LR
-                )
-            )
-
-            self._navPath = NavPath(
-                roadWidth=2 * 3.5,
-                path=[point1, point2, point3, point4],
-                nEgoDirectionLanes=1,
-                nEgoOppositeDirectionLanes=1,
-                avgSpeed=0.5,
-                maxSpeed=1.5,
-                minSpeed=0.0,
-                egoLaneWrtCenter = 1,
-                egoSpeedStart=20,
-                egoSpeedEnd=10
-            )
+        # print(self._navPath)
+        # exit(0)
         return self._navPath
     
     def createDynamicAgents(self):
@@ -156,6 +121,7 @@ class Research4v4(SettingBasedResearch):
 
     def recreateDynamicAgents(self):
        
+        
         self.vehicleAgents.clear()
         self.logger.info('\ndestroying  vehicles')
         self.vehicleFactory.reset()
@@ -174,7 +140,7 @@ class Research4v4(SettingBasedResearch):
     
     def getVehicleWalkerSettingsPairs(self) -> List[Tuple[SourceDestinationPair, SourceDestinationPair]]:
         
-        walkerSettings = self.settingsManager.getWalkerSettings()
+        walkerSettings = self.getWalkerSettings()
         vehicleSettings = self.settingsManager.getVehicleSettings()
 
         pairs = []
@@ -184,12 +150,30 @@ class Research4v4(SettingBasedResearch):
 
         return pairs
     
+
+    
+    def getWalkerSettings(self):
+        
+        reverse = False
+        if self.navPath.direction == Direction.RL:
+            reverse = True
+
+        walkerSettings = self.settingsManager.getWalkerSettings()
+
+        if not reverse:
+            return walkerSettings
+        
+        return [self.settingsManager.reverseWalkerSetting(walkerSetting) for walkerSetting in walkerSettings]
+
+    
     def createVehicle(self, vehicleSetting: SourceDestinationPair) -> Tuple[carla.Vehicle, BehaviorAgent]:
         maxSpeed = random.choice([10, 14, 18, 22])
         return super().createVehicle(vehicleSetting, maxSpeed=maxSpeed)
     
 
     def createWalker(self, vehicle: carla.Vehicle, walkerSetting: SourceDestinationPair) -> Tuple[carla.Walker, PedestrianAgent]:
+
+        print("walkerSetting", walkerSetting)
 
         walker, walkerAgent = super().createWalker(walkerSetting)
 

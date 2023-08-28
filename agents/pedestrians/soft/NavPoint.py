@@ -18,8 +18,8 @@ class NavPointLocation:
 @dataclass
 class NavPointBehavior:
     speed: float = None
-    direction: Direction = None
-    behaviorTags: Set[BehaviorType] = field(default_factory=set)
+    # direction: Direction = None
+    behaviorTags: Set[BehaviorType] = field(default_factory=lambda: set([]))
 
 
 
@@ -34,15 +34,20 @@ class NavPoint:
         
         # self.ttc = None
 
+        assert location.distanceToEgo != 0
+
         self.location = location
         self.behavior = behavior
+        self.overlapOffset = 0.0
 
     def __str__(self) -> str:
         return (
-            f"{self.laneId}: {self.laneSection}"
-            f"\n{self.distanceToEgo}: {self.distanceToInitialEgo}"
-            f"\nspeed: {self.speed}, direction: {self.direction}"
+            f"lane: {self.laneId}: {self.laneSection}"
+            f"\nego: {self.distanceToEgo}: {self.distanceToInitialEgo}"
+            # f"\nspeed: {self.speed}, direction: {self.direction}"
+            f"\nspeed: {self.speed}"
             f"\ntags: {self.behaviorTags}"
+            f"\ntags: {self.overlapOffset}"
         )
     
     @property
@@ -65,9 +70,9 @@ class NavPoint:
     def speed(self) -> float:
         return self.behavior.speed
     
-    @property
-    def direction(self) -> Direction:
-        return self.behavior.direction
+    # @property
+    # def direction(self) -> Direction:
+    #     return self.behavior.direction
 
     @property
     def behaviorTags(self) -> Set[BehaviorType]:
@@ -183,6 +188,12 @@ class NavPoint:
             # print("myStepsToTheRightLane", myStepsToTheRightLane)
             # print("otherStepsToTheLeftLane", otherStepsToTheLeftLane)
             return myStepsToTheRightLane + otherStepsToTheLeftLane + middleLaneSteps - 1
+    
+    def isAtTheSameLocation(self, other: 'NavPoint') -> bool:
+        if self.laneId == other.laneId:
+            if self.laneSection == other.laneSection:
+                return True
+        return False
         
             
         
