@@ -7,6 +7,8 @@ import os
 import numpy as np
 import json
 from datetime import date
+from agents.navigation.behavior_agent import BehaviorAgent
+from agents.navigation.idm_agent import IDMAgent
 
 from agents.pedestrians.soft import Direction, LaneSection, NavPath, NavPoint
 
@@ -56,11 +58,7 @@ class SettingHighDResearch(BaseResearch):
         self.vehicleFactory = VehicleFactory(self.client, visualizer=self.visualizer)
         self.follow_meta = pd.read_csv(self.filterSettings)
 
-        # self.episodeNumber = 0
-        # self.episodeTimeStep = 0
-        # self.stats = stats
-        # self.maxStepsPerCrossing = maxStepsPerCrossing
-        # self.settingsId = settingsId
+
 
     pass
 
@@ -70,10 +68,10 @@ class SettingHighDResearch(BaseResearch):
 
         self.simulator = None # populated when run
 
-        # change spectator if in setting
-        # spectatorSettings = self.settingsManager.getSpectatorSettings()
-        # if spectatorSettings is not None:
-        #     self.mapManager.setSpectator(spectatorSettings)
+    def get_follow_meta(self, follow_meta_index):
+        curScenario_id = self.follow_meta['scenario_id'].unique()[follow_meta_index]
+        curScenario = self.follow_meta[self.follow_meta['scenario_id'] == curScenario_id]
+        return curScenario
         
     def locationToVehicleSpawnPoint(self, location: carla.Location) -> carla.Transform:
     
@@ -84,3 +82,19 @@ class SettingHighDResearch(BaseResearch):
             self.error(msg)
         transform = carla.Transform(location = waypoint.transform.location + carla.Location(z=1), rotation = waypoint.transform.rotation)
         return transform
+    
+    def updateVehicleCommand(self, world_snapshot, vehicleAgent, vehicle: carla.Vehicle):
+        if not vehicle.is_alive:
+            return
+        
+        if vehicleAgent is None:
+            self.logger.error(f"vehicleAgent is None")
+            return
+        
+        control = vehicleAgent.run_step()
+        control.manual_gear_shift = False
+        # self.logger.info(f"control {control}")
+        control_command = carla.command.ApplyVehicleControl(vehicle.id, control)
+        
+        return control_command
+        

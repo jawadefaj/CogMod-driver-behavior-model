@@ -58,7 +58,8 @@ class LocalPlanner(object):
             offset: distance between the route waypoints and the center of the lane
         """
 
-        self.logger = LoggerFactory.create("Vehicle-LocalPlanner")
+        logger_name = f'LocalPlanner-{vehicle.id}'
+        self.logger = LoggerFactory.create(logger_name)
         self._vehicle = vehicle
         self._world = self._vehicle.get_world()
         self._map = self._world.get_map()
@@ -72,13 +73,13 @@ class LocalPlanner(object):
         self._stop_waypoint_creation = False
 
         # Base parameters
-        self._dt = 1.0 / 20.0
+        self._dt = 1.0 / 25.0
         self._target_speed = 20.0  # Km/h
         self._sampling_radius = 2.0
         self._args_lateral_dict = {'K_P': 1.95, 'K_I': 0.05, 'K_D': 0.2, 'dt': self._dt}
-        self._args_longitudinal_dict = {'K_P': 1.0, 'K_I': 0.05, 'K_D': 0, 'dt': self._dt}
-        self._max_throt = 0.75
-        self._max_brake = 0.3
+        self._args_longitudinal_dict = {'K_P': 2.0, 'K_I': 0.5, 'K_D': 0.2, 'dt': self._dt}
+        self._max_throt = 0.95
+        self._max_brake = 0.5
         self._max_steer = 0.8
         self._offset = 0
         self._base_min_distance = 3.0
@@ -137,13 +138,13 @@ class LocalPlanner(object):
 
         firsWp = self._waypoints_queue[0][0]
 
-        if firsWp.transform.location.distance(carla.Location(x=-96.050758, y=-4.759546, z=0.000015)) < 1 or firsWp.transform.location.distance(self._vehicle.get_location()) > 15:
-            self.logger.warn(f"Initial waypoints current waypoint {current_waypoint.transform.location} from vehicle's location {self._vehicle.get_location()}")
-            Utils.draw_trace_route(self._world.debug, self._waypoints_queue, color=(0, 0, 200), life_time=0.0)
-            Utils.log_route(self.logger, self._waypoints_queue)
-            self.logger.warn("Initial waypoints queue")
-            Utils.log_route(self.logger, self._waypoints_queue)
-            raise WaypointTooFar("Initial waypoints current waypoint {current_waypoint.transform.location} from vehicle's location {self._vehicle.get_location()}")
+        # if firsWp.transform.location.distance(carla.Location(x=-96.050758, y=-4.759546, z=0.000015)) < 1 or firsWp.transform.location.distance(self._vehicle.get_location()) > 15:
+        #     self.logger.warn(f"Initial waypoints current waypoint {current_waypoint.transform.location} from vehicle's location {self._vehicle.get_location()}")
+        #     Utils.draw_trace_route(self._world.debug, self._waypoints_queue, color=(0, 0, 200), life_time=0.0)
+        #     Utils.log_route(self.logger, self._waypoints_queue)
+        #     self.logger.warn("Initial waypoints queue")
+        #     Utils.log_route(self.logger, self._waypoints_queue)
+        #     raise WaypointTooFar("Initial waypoints current waypoint {current_waypoint.transform.location} from vehicle's location {self._vehicle.get_location()}")
 
 
     def set_speed(self, speed):
@@ -174,7 +175,7 @@ class LocalPlanner(object):
         :param k: how many waypoints to compute
         :return:
         """
-        self.logger.info(f"_compute_next_waypoints")
+        # self.logger.info(f"agent id {self._vehicle.id}_compute_next_waypoints")
         # check we do not overflow the queue
         available_entries = self._waypoints_queue.maxlen - len(self._waypoints_queue)
         k = min(available_entries, k)
@@ -182,7 +183,7 @@ class LocalPlanner(object):
         for _ in range(k):
             last_waypoint = self._waypoints_queue[-1][0]
 
-            self.logger.info(f"Calculating waypoint from location {last_waypoint.transform.location}")
+            # self.logger.info(f"Calculating waypoint from location {last_waypoint.transform.location}")
             next_waypoints = list(last_waypoint.next(self._sampling_radius))
 
             if len(next_waypoints) == 0:
@@ -304,16 +305,10 @@ class LocalPlanner(object):
             self.logger.warn("Vehicle cannot find waypoint")
         else:
             self.target_waypoint, self.target_road_option = self._waypoints_queue[0]
-            self.logger.debug(f"Vehicle target_waypoint: {self.target_waypoint}")
+            # self.logger.debug(f"Vehicle target_waypoint: {self.target_waypoint}")
             control = self._vehicle_controller.run_step(self._target_speed, self.target_waypoint)
 
         if debug:
-            # wps = []
-            # for wp, ro in self._waypoints_queue:
-            #     # self.logger.info(wp.transform.location)
-            #     # print(wp.transform.location)
-            #     wps.append(wp)
-            # draw_waypoints(self._vehicle.get_world(), wps, 1.0)
             draw_waypoints(self._vehicle.get_world(), [self.target_waypoint], 1.0)
 
         return control

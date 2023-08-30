@@ -24,13 +24,15 @@ from agents.pedestrians.PedestrianAgent import PedestrianAgent
 from agents.pedestrians.factors import Factors
 from agents.vehicles import VehicleFactory
 
-from agents.navigation.behavior_agent import BehaviorAgent
+from agents.navigation.behavior_agent import BasicAgent
 from agents.navigation.idm_agent import IDMAgent
 from lib import Simulator, EpisodeSimulator, SimulationMode, EpisodeTrajectoryRecorder, ActorClass
 from lib import Utils
 import pandas as pd
 from lib.MapManager import MapNames
 from agents.pedestrians.soft import NavPointLocation, NavPointBehavior, LaneSection, Direction, NavPath
+
+from lib.ScenarioState import ScenarioState
 
 class ResearchIDM(SettingHighDResearch):
     
@@ -54,72 +56,119 @@ class ResearchIDM(SettingHighDResearch):
                          filterSettings=filterSettings,
                          )
         
-
-        self.vehicles: List[carla.Vehicle] = []
-        self.vehicleAgents: List[IDMAgent] = []
-
-        self.curScenario = self.follow_meta.iloc[0]
+        self.speed_buffer = 0.1
+        self.distance_boost = 10
+        # group the follow_meta by scenario id and then select the first group which is multiple rows
+        
+        self.cur_scenario_index = 2
+        # self.curScenario_id = self.follow_meta['scenario_id'].unique()[0]
+        # self.curScenario = self.follow_meta[self.follow_meta['scenario_id'] == self.curScenario_id]
+        
+        self.idm_vehicle: carla.Vehicle = None
+        self.idm_agent: IDMAgent = None
+        
+        self.preceding_vehicle: carla.Vehicle = None
+        self.preceding_agent: BasicAgent = None
+        
+        self.scenario_state: ScenarioState = None
+        self.start_scenario_after_n_frame = 100
+        
+        self.scenario_start_frame = -1
+        self.scenario_end_frame = -1
         
         self.setup()
 
+    def align_scenario(self, scenario_index=0):
+        
+        cur_scenario = self.get_follow_meta(scenario_index)
+        idm_source = carla.Location(-210, 7, 0.5)
+        preceding_x = cur_scenario["preceding_x"].iloc[0] + self.distance_boost
+        preceding_vehicle_source = carla.Location(-210 + preceding_x, 7, 0.5)
+        destination = carla.Location(500, 7, 0.5)
+        
+        idm_source_destination_pair = SourceDestinationPair(idm_source, destination)
+        preceding_vehicle_source_destination_pair = SourceDestinationPair(preceding_vehicle_source, destination)
+        return idm_source_destination_pair, preceding_vehicle_source_destination_pair
+        
     # filter the highD dataset
     def setup(self):
         super().setup()
-        
+        # location = carla.Location(x=500, y=7, z=0.5)
+        # self.visualizer.drawPoint(location, color=(0, 0, 255), size=0.2, life_time=1000)
         pass
 
-    def createIDMAgent(self, 
-                       spawnLocation: carla.Location, 
-                       destination: carla.Location,
-                       targetSpeed: float = 10,):
-        self.mapManager.spawnActor(ActorClass.Vehicle, spawnLocation)
-        source_destination_pair = SourceDestinationPair(source=spawnLocation, destination=destination)
-        
-        
-        
-        
-        pass
-    
     
     def createDynamicAgents(self):
-
-        # for vehicleSetting, walkerSetting in self.getVehicleWalkerSettingsPairs():
-        #     vehicle, vehicleAgent = self.createVehicle(vehicleSetting)
-        #     self.vehicles.append(vehicle)
-        #     self.vehicleAgents.append(vehicleAgent)
-
-        #     self.tickOrWaitBeforeSimulation() # otherwise we can get wrong vehicle location!
-            # walker, walkerAgent = self.createWalker(vehicle, walkerSetting)
-            # self.walkers.append(walker)
-            # self.walkerAgents.append(walkerAgent)
+    
+        command_list = []
+        cur_scenario = self.get_follow_meta(self.cur_scenario_index)
+        idm_sd_pair, preceding_sd_pair = self.align_scenario(self.cur_scenario_index)
+        idm_spawn_command = self.createVehicleCommand(idm_sd_pair)
+        preceding_spawn_command = self.createVehicleCommand(preceding_sd_pair)
         
+        command_list.append(idm_spawn_command)
+        command_list.append(preceding_spawn_command)
+
+        res = self.client.apply_batch_sync(command_list, True)
+        for r in res:
+            if r.error:
+                self.logger.error(r.error)
+                print('actor ', r.actor_id, r.error)
+            else:
+                self.logger.info(f"spawned vehicle {r.actor_id}")
+
+        self.tickOrWaitBeforeSimulation()
+        
+        self.idm_vehicle = self.world.get_actor(res[0].actor_id)
+        self.preceding_vehicle = self.world.get_actor(res[1].actor_id)
+        
+        idm_target_speed = cur_scenario['ego_vx'].iloc[0] + self.speed_buffer
+        preceding_target_speed = cur_scenario['preceding_vx'].iloc[0] + self.speed_buffer
+        
+        self.idm_agent = IDMAgent(self.idm_vehicle, idm_target_speed)
+        self.preceding_agent = BasicAgent(self.preceding_vehicle, preceding_target_speed)
+        
+        self.visualizer.trackAgentOnTick(self.idm_agent)
+        self.visualizer.trackAgentOnTick(self.preceding_agent)
+        
+        self.scenario_state = ScenarioState.PENDING
+        self.scenario_start_frame = -1
+        
+        self.is_const_vel_enabled = False
+        self.is_driver_changed_scenario_starting = False
+        self.is_driver_changed_scenario_running = False
+        
+        print("creating dynamic agents", self.cur_scenario_index, cur_scenario.iloc[0])
         pass
+
+    def enable_constant_velocity(self, idm_target_speed, preceding_target_speed):
+        self.idm_vehicle.enable_constant_velocity(carla.Vector3D(x=idm_target_speed, y=0, z=0))
+        self.preceding_vehicle.enable_constant_velocity(carla.Vector3D(x=preceding_target_speed, y=0, z=0))
 
     def recreateDynamicAgents(self):
            
-        # self.vehicleAgents.clear()
-        # self.logger.info('\ndestroying  vehicles')
-        # self.vehicleFactory.reset()
-
-        # for idx, (vehicleSetting, walkerSetting) in enumerate(self.getVehicleWalkerSettingsPairs()):
-        #     vehicle, vehicleAgent = self.createVehicle(vehicleSetting)
-        #     self.vehicles.append(vehicle)
-        #     self.vehicleAgents.append(vehicleAgent)
-
-        #     self.tickOrWaitBeforeSimulation() # otherwise we can get wrong vehicle location!
-        #     self.resetWalker(vehicle, self.walkerAgents[idx], walkerSetting)
-
+        pass
+    
+    def restart_scenario(self):
+        self.logger.info(f"restarting scenario")
+        self.scenario_state = ScenarioState.PENDING
+        self.scenario_start_frame = -1
+        self.is_const_vel_enabled = False
+        self.is_driver_changed_scenario_starting = False
+        self.is_driver_changed_scenario_running = False
+        self.idm_agent = None
+        self.preceding_agent = None
+        self.start_scenario_after_n_frame = self.scenario_end_frame + 100
+        self.createDynamicAgents()
         pass
     
 
     
-    def createVehicle(self, vehicleSetting: SourceDestinationPair) -> Tuple[carla.Vehicle, IDMAgent]:
+    def createVehicleCommand(self, vehicleSetting: SourceDestinationPair):
         
-        vehicle_spawn_wp = self.locationToVehicleSpawnPoint(vehicleSetting.source)
-        vehicle_destimation_wp = self.locationToVehicleSpawnPoint(vehicleSetting.destination)
-        
-        vehicle = self.vehicleFactory.spawn(vehicle_spawn_wp)
-        pass
+        spawn_wp = self.locationToVehicleSpawnPoint(vehicleSetting.source)
+        spawn_command = self.vehicleFactory.spawn_command(spawn_wp)
+        return spawn_command                
 
 
 
@@ -133,8 +182,9 @@ class ResearchIDM(SettingHighDResearch):
         """
         # self.episodeNumber = 1 # updated when resetted
 
-        onTickers = [self.visualizer.onTick, self.onTick] # onTick must be called before restart
-        terminalSignalers = [walkerAgent.isFinished for walkerAgent in self.walkerAgents]
+        onTickers = [self.visualizer.onTick, self.check_scenario_state, self.onTick] # onTick must be called before restart
+        # terminalSignalers = [walkerAgent.isFinished for walkerAgent in self.walkerAgents]
+        terminalSignalers = []
 
         if episodic:
             # this is only to be used from gym environments. It does not call onEnd as we may reset and run
@@ -147,7 +197,7 @@ class ResearchIDM(SettingHighDResearch):
             )
         else:
             onEnders = [self.onEnd]
-            onTickers.append(self.restart)
+            # onTickers.append(self.restart)
             self.simulator = Simulator(
                 self.client, 
                 onTickers=onTickers, 
@@ -156,25 +206,10 @@ class ResearchIDM(SettingHighDResearch):
             )
 
     def run(self, maxTicks=1000):
-        """Runs in asynchronous mode only
-
-        Args:
-            maxTicks (int, optional): _description_. Defaults to 1000.
-        """
-
-        # self.episodeNumber = 1 # updated when resetted
-        
-
-        # self.visualizer.drawPoint(carla.Location(x=-96.144363, y=-3.690280, z=1), color=(0, 0, 255), size=0.1)
-        # self.visualizer.drawPoint(carla.Location(x=-134.862671, y=-42.092407, z=0.999020), color=(0, 0, 255), size=0.1)
-
-        # return
-
         try:
 
             self.createDynamicAgents()
             
-            # self.world.wait_for_tick()
             self.tickOrWaitBeforeSimulation()
 
             self.setupSimulator(False)
@@ -187,56 +222,155 @@ class ResearchIDM(SettingHighDResearch):
         # endregion
 
 
-    def restart(self, world_snapshot):
-
-        # areWalkersFinished = True
-        # for walkerAgent in self.walkerAgents:
-        #     if not walkerAgent.isFinished():
-        #         areWalkersFinished = False
-        #         break
-        
-
-        # killCurrentEpisode = False
-        
-        # if areWalkersFinished:
-        #     self.episodeNumber += 1
-        #     self.episodeTimeStep = 0
-        #     killCurrentEpisode = True
-
-        # if self.episodeTimeStep > 200:
-        #     self.episodeTimeStep = 0
-        #     killCurrentEpisode = True
-        #     self.logger.info("Killing current episode as it takes more than 200 ticks")
-        
-        # if killCurrentEpisode:
-
-        #     self.logger.warn(f"Killing current episode. Episode number: {self.episodeNumber}")
-
-        #     self.recreateDynamicAgents()
-        #     # 3. update statDataframe
-        #     # self.updateStatDataframe()
-        pass
 
     
     def onEnd(self):
         self.logger.warn(f"ending simulation")
         self.destoryActors()
+        self.idm_agent = None
+        self.preceding_agent = None
         # self.saveStats()
 
+    def destoryActors(self):
+        all_vehicle_actors = self.world.get_actors().filter('vehicle.*')
+        id_list = []
+        for actor in all_vehicle_actors:
+            id_list.append(actor.id)
+        print("all vehicle ids : ", id_list)
+        command_list = []
+        for id in id_list:
+            command_list.append(carla.command.DestroyActor(id))
+        res = self.client.apply_batch_sync(command_list, False)
+        
+        for r in res:
+            if r.error:
+                print('actor ', r.actor_id, r.error)
+            else:
+                print('actor ', r.actor_id, 'destroyed')
+        pass
+    
     def onTick(self, world_snapshot):
+        
+        self.set_spectator()
+        cur_scenario = self.get_follow_meta(self.cur_scenario_index)
+        
+        idm_speed = self.idm_vehicle.get_velocity().length()
+        preceding_speed = self.preceding_vehicle.get_velocity().length()
+        
+        distance = self.idm_vehicle.get_location().distance(self.preceding_vehicle.get_location())
+        
+        idm_diff = cur_scenario['ego_vx'].iloc[0] - idm_speed
+        preceding_diff = cur_scenario['preceding_vx'].iloc[0] - preceding_speed
+        
+        # self.logger.info(f"speed diff idm {round(idm_diff, 2)} ; basic {round(preceding_diff, 2)}, distance {round(distance, 2)}")
+        
+        command_list = []
+        
+        if self.scenario_state == ScenarioState.PENDING:
+            if not self.is_const_vel_enabled:
+                idm_target_speed = cur_scenario['ego_vx'].iloc[0] + self.speed_buffer
+                preceding_target_speed = cur_scenario['preceding_vx'].iloc[0] + self.speed_buffer
+                self.enable_constant_velocity(idm_target_speed, preceding_target_speed)
+                self.is_const_vel_enabled = True
+        
+        elif self.scenario_state == ScenarioState.STARTING:
+            # change driver to idm
+            if not self.is_driver_changed_scenario_starting:
+                self.idm_vehicle.disable_constant_velocity()
+                idm_target_speed = cur_scenario['ego_vx'].iloc[0] + self.speed_buffer
+                self.update_driver_settings(idm_target_speed)
+                self.is_driver_changed_scenario_starting = True
+            pass
+        
+        elif self.scenario_state == ScenarioState.RUNNING:
+            if not self.is_driver_changed_scenario_running:
+                idm_target_speed = cur_scenario['ego_vx'].max() + self.speed_buffer
+                self.update_driver_settings(idm_target_speed)
+                self.preceding_vehicle.disable_constant_velocity()
+            scenario_frame = world_snapshot - self.scenario_start_frame
+            self.preceding_agent.set_target_speed(cur_scenario['preceding_vx'].iloc[scenario_frame] + self.speed_buffer)
+            # self.logger.info(f"scenario frame {scenario_frame}")
+            pass
+        
+        elif self.scenario_state == ScenarioState.FINISHED:
+            self.logger.info(f"scenario finished")
+            if self.cur_scenario_index < len(self.follow_meta) - 1:
+                self.cur_scenario_index += 1
+                self.scenario_end_frame = world_snapshot
+                self.restart_scenario()
+            # self.onEnd()
+            return
+        
+        idm_control_command = self.updateVehicleCommand(world_snapshot, self.idm_agent, self.idm_vehicle)
+        preceding_control_command = self.updateVehicleCommand(world_snapshot, self.preceding_agent, self.preceding_vehicle)
+        command_list.append(idm_control_command)
+        command_list.append(preceding_control_command)
+        
+        res = self.client.apply_batch_sync(command_list, False)
+        for r in res:
+            if r.error:
+                self.logger.error(r.error)
+                print('actor ', r.actor_id, r.error)
+            
+    def update_driver_settings(self, desired_speed):
+        
+        desired_velocity = desired_speed
+        safe_time_headway = 1.0
+        max_acceleration = 4.5
+        comfort_deceleration = 1.5
+        acceleration_exponent = 4
+        minimum_distance_1 = 0
+        minimum_distance_2 = 0
+        vehicle_length = 4
+        
+        self.idm_agent.set_idm_parameters(desired_velocity, safe_time_headway, 
+                                          max_acceleration, comfort_deceleration, 
+                                          acceleration_exponent, 
+                                          minimum_distance_1, minimum_distance_2,
+                                          vehicle_length)
+        pass
+    
+        
+    
+    def check_scenario_state(self, world_snapshot):
+        
+        cur_scenario = self.get_follow_meta(self.cur_scenario_index)
+        idm_speed = self.idm_vehicle.get_velocity().length()
+        preceding_speed = self.preceding_vehicle.get_velocity().length()
+        
+        distance = self.idm_vehicle.get_location().distance(self.preceding_vehicle.get_location())
+        
+        is_idm_speed_ok = abs(cur_scenario['ego_vx'].iloc[0] - idm_speed) < abs(self.speed_buffer) * 2
+        is_preceding_speed_ok = abs(cur_scenario['preceding_vx'].iloc[0] - preceding_speed) < abs(self.speed_buffer) * 2
+        
+        if self.scenario_state == ScenarioState.PENDING and world_snapshot >= self.start_scenario_after_n_frame:
+            if is_idm_speed_ok and is_preceding_speed_ok:
+                self.scenario_state = ScenarioState.STARTING
+                self.logger.info(f"scenario state changed to {self.scenario_state}")
+            
+        elif self.scenario_state == ScenarioState.STARTING:
+            if distance <= cur_scenario['preceding_x'].iloc[0]:
+                self.scenario_state = ScenarioState.RUNNING
+                self.scenario_start_frame = world_snapshot
+                self.logger.info(f"scenario state changed to {self.scenario_state}")
+        
+        elif self.scenario_state == ScenarioState.RUNNING:
+            total_frame = cur_scenario['frame'].iloc[-1]
+            if world_snapshot - self.scenario_start_frame >= total_frame:
+                self.scenario_state = ScenarioState.FINISHED
+                self.logger.info(f"scenario state changed to {self.scenario_state}")
+        
+        elif self.scenario_state == ScenarioState.FINISHED:
+            return
+        
 
-        self.episodeTimeStep += 1
-
-        # self.collectStats(world_snapshot)
-
-        for idx, walkerAgent in enumerate(self.walkerAgents):
-            walkerAgent.onTickStart(world_snapshot)
-            self.updateWalker(world_snapshot, walkerAgent, self.walkers[idx])
-
-        for idx, vehicleAgent in enumerate(self.vehicleAgents):
-            self.updateVehicle(world_snapshot, vehicleAgent, self.vehicles[idx])
-
-
+    def set_spectator(self):
+        mid = (self.idm_vehicle.get_location() - self.preceding_vehicle.get_location()) / 2.0
+        location = self.preceding_vehicle.get_location() + mid
+        location.z = 200
+        rotation = carla.Rotation(pitch=-90)
+        transform = carla.Transform(location, rotation)
+        self.mapManager.setSpectator(transform)
             
 
 

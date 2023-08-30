@@ -144,5 +144,4 @@ class ResearchFactory:
                          simulationMode=simulationMode, 
                          filterSettings=filterSettings,
                          )
-        exit('done')
         return research

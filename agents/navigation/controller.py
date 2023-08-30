@@ -10,7 +10,10 @@ import math
 import numpy as np
 import carla
 from agents.tools.misc import get_speed
+from lib import LoggerFactory
 
+def r(float):
+    return round(float,2)
 
 class VehiclePIDController():
     """
@@ -40,7 +43,9 @@ class VehiclePIDController():
         Positive values imply a right offset while negative ones mean a left one. Numbers high enough
         to cause the vehicle to drive through other lanes might break the controller.
         """
-
+        logger_name = f'Controller-{vehicle.id}'
+        self.logger = LoggerFactory.create(logger_name)
+        
         self.max_brake = max_brake
         self.max_throt = max_throttle
         self.max_steer = max_steering
@@ -48,7 +53,7 @@ class VehiclePIDController():
         self._vehicle = vehicle
         self._world = self._vehicle.get_world()
         self.past_steering = self._vehicle.get_control().steer
-        self._lon_controller = PIDLongitudinalController(self._vehicle, **args_longitudinal)
+        self._lon_controller = PIDLongitudinalController(self._vehicle, **args_longitudinal,logger=self.logger)
         self._lat_controller = PIDLateralController(self._vehicle, offset, **args_lateral)
 
     def run_step(self, target_speed, waypoint):
@@ -106,7 +111,7 @@ class PIDLongitudinalController():
     PIDLongitudinalController implements longitudinal control using a PID.
     """
 
-    def __init__(self, vehicle, K_P=1.0, K_I=0.0, K_D=0.0, dt=0.03):
+    def __init__(self, vehicle, K_P=1.0, K_I=0.0, K_D=0.0, dt=0.03, logger=None):
         """
         Constructor method.
 
@@ -122,6 +127,8 @@ class PIDLongitudinalController():
         self._k_d = K_D
         self._dt = dt
         self._error_buffer = deque(maxlen=10)
+        
+        self.logger = logger
 
     def run_step(self, target_speed, debug=False):
         """
@@ -156,8 +163,14 @@ class PIDLongitudinalController():
         else:
             _de = 0.0
             _ie = 0.0
-
-        return np.clip((self._k_p * error) + (self._k_d * _de) + (self._k_i * _ie), -1.0, 1.0)
+        p = self._k_p * error
+        d = self._k_d * _de
+        i = self._k_i * _ie
+        
+        ret = np.clip(p + i + d, -1.0, 1.0)
+        # self.logger.info(f'target {r(target_speed)}, cur {r(current_speed)} err {r(error)} p: {r(p)}, i: {r(i)}, d: {r(d)} , ret: {r(ret)}')
+        
+        return ret 
 
     def change_parameters(self, K_P, K_I, K_D, dt):
         """Changes the PID parameters"""

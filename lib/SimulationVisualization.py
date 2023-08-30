@@ -32,7 +32,7 @@ class SimulationVisualization(ClientUser):
     def trackAgentOnTick(self, agent):
         if agent is None:
             return
-        self.trackingAgent[agent.vehicle.id] = agent
+        self.trackingAgent[agent._vehicle.id] = agent
 
 
     # def onTick(self, world_snapshot):
@@ -397,18 +397,23 @@ class SimulationVisualization(ClientUser):
         return pallete
 
     def drawAgentStatus(self, vehicleAgent):
-        self.draw_target_waypoint(vehicleAgent)
-        self.draw_global_plan(vehicleAgent)
+        # self.draw_target_waypoint(vehicleAgent)
+        vehicle = vehicleAgent._vehicle
+        speed = vehicle.get_velocity().length()
+        location = vehicle.get_location()
+        location.z = 1.5
+        self.drawText(location=location, text=f"{speed:.2f}", life_time=0.05)
+        # self.draw_global_plan(vehicleAgent)
         # self.draw_steering_direction(vehicleAgent)
         pass
 
-    def draw_target_waypoint(self, agent):
-        target_waypoint = agent.motor_control.target_waypoint
-        if target_waypoint is not None:
-            self.drawWaypoints([target_waypoint],
-                                color=(255, 0, 0),
-                                z=1.5,
-                                life_time=1)
+    # def draw_target_waypoint(self, agent):
+    #     target_waypoint = agent.motor_control.target_waypoint
+    #     if target_waypoint is not None:
+    #         self.drawWaypoints([target_waypoint],
+    #                             color=(255, 0, 0),
+    #                             z=1.5,
+    #                             life_time=1)
     
     def draw_global_plan(self, vehicleAgent):
         globalPlan = vehicleAgent.local_map.global_plan

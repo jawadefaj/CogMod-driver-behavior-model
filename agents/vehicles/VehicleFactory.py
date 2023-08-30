@@ -5,6 +5,7 @@ import logging
 
 from agents.navigation.behavior_agent import BehaviorAgent  # pylint: disable=import-error
 from agents.navigation.basic_agent import BasicAgent
+from agents.navigation.idm_agent import IDMAgent
 from agents.vehicles.SpeedControlledBehaviorAgent import SpeedControlledBehaviorAgent  # pylint: disable=import-error
 from lib import LoggerFactory, ClientUser
 
@@ -72,6 +73,12 @@ class VehicleFactory(ClientUser):
         agent = SpeedControlledBehaviorAgent(vehicle, behavior=behavior, max_speed=max_speed)
         return agent
 
+    def createIDMAgent(self, vehicle: carla.Vehicle, target_speed=20, opt_dict=None, logLevel=logging.INFO) -> IDMAgent:
+        if opt_dict is None:
+            self.logger.error("IDMAgent: opt_dict is None")
+            return
+        agent = IDMAgent(vehicle, target_speed=20, opt_dict=opt_dict)
+        return agent
 
     def spawn_command(self, spawnPoint):
         vehicleBp = self.create()
