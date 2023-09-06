@@ -33,6 +33,7 @@ from lib.MapManager import MapNames
 from agents.pedestrians.soft import NavPointLocation, NavPointBehavior, LaneSection, Direction, NavPath
 
 from lib.ScenarioState import ScenarioState
+from lib.idm_highd_data_collector import IdmHighDDataCollector
 
 class ResearchIDM(SettingHighDResearch):
     
@@ -56,11 +57,11 @@ class ResearchIDM(SettingHighDResearch):
                          filterSettings=filterSettings,
                          )
         
-        self.speed_buffer = 0.1
-        self.distance_boost = 10
+        self.speed_buffer = 0.2
+        self.distance_boost = 2
         # group the follow_meta by scenario id and then select the first group which is multiple rows
         
-        self.cur_scenario_index = 2
+        self.cur_scenario_index = 0
         # self.curScenario_id = self.follow_meta['scenario_id'].unique()[0]
         # self.curScenario = self.follow_meta[self.follow_meta['scenario_id'] == self.curScenario_id]
         
@@ -93,6 +94,7 @@ class ResearchIDM(SettingHighDResearch):
     # filter the highD dataset
     def setup(self):
         super().setup()
+        self.data_collector = IdmHighDDataCollector()
         # location = carla.Location(x=500, y=7, z=0.5)
         # self.visualizer.drawPoint(location, color=(0, 0, 255), size=0.2, life_time=1000)
         pass
@@ -165,12 +167,9 @@ class ResearchIDM(SettingHighDResearch):
 
     
     def createVehicleCommand(self, vehicleSetting: SourceDestinationPair):
-        
         spawn_wp = self.locationToVehicleSpawnPoint(vehicleSetting.source)
         spawn_command = self.vehicleFactory.spawn_command(spawn_wp)
         return spawn_command                
-
-
 
     #region simulation
 
@@ -229,6 +228,7 @@ class ResearchIDM(SettingHighDResearch):
         self.destoryActors()
         self.idm_agent = None
         self.preceding_agent = None
+        self.data_collector.saveCSV(f"follow_scenario_{self.cur_scenario_index}", "logs")
         # self.saveStats()
 
     def destoryActors(self):
@@ -262,7 +262,7 @@ class ResearchIDM(SettingHighDResearch):
         idm_diff = cur_scenario['ego_vx'].iloc[0] - idm_speed
         preceding_diff = cur_scenario['preceding_vx'].iloc[0] - preceding_speed
         
-        # self.logger.info(f"speed diff idm {round(idm_diff, 2)} ; basic {round(preceding_diff, 2)}, distance {round(distance, 2)}")
+        self.logger.info(f"speed diff idm {round(idm_diff, 2)} ; basic {round(preceding_diff, 2)}, distance {round(distance, 2)}")
         
         command_list = []
         
@@ -278,7 +278,7 @@ class ResearchIDM(SettingHighDResearch):
             if not self.is_driver_changed_scenario_starting:
                 self.idm_vehicle.disable_constant_velocity()
                 idm_target_speed = cur_scenario['ego_vx'].iloc[0] + self.speed_buffer
-                self.update_driver_settings(idm_target_speed)
+                self.update_driver_settings(idm_target_speed, controlled=True)
                 self.is_driver_changed_scenario_starting = True
             pass
         
@@ -295,10 +295,12 @@ class ResearchIDM(SettingHighDResearch):
         elif self.scenario_state == ScenarioState.FINISHED:
             self.logger.info(f"scenario finished")
             if self.cur_scenario_index < len(self.follow_meta) - 1:
-                self.cur_scenario_index += 1
+                # self.cur_scenario_index += 1
                 self.scenario_end_frame = world_snapshot
-                self.restart_scenario()
-            # self.onEnd()
+                self.data_collector.updateTrajectoryDF()
+                # self.restart_scenario()
+                self.onEnd()
+                self.simulator = None
             return
         
         idm_control_command = self.updateVehicleCommand(world_snapshot, self.idm_agent, self.idm_vehicle)
@@ -311,11 +313,21 @@ class ResearchIDM(SettingHighDResearch):
             if r.error:
                 self.logger.error(r.error)
                 print('actor ', r.actor_id, r.error)
+        
+        # collect data
+        self.data_collector.collectStats(
+            scenario_id=cur_scenario['scenario_id'].iloc[0],
+            exec_num=0,
+            frame=world_snapshot,
+            scenario_status=self.scenario_state,
+            idm_vehicle=self.idm_vehicle,
+            actor_vehicle=self.preceding_vehicle
+        )
             
-    def update_driver_settings(self, desired_speed):
+    def update_driver_settings(self, desired_speed, controlled=False):
         
         desired_velocity = desired_speed
-        safe_time_headway = 1.0
+        safe_time_headway = 0
         max_acceleration = 4.5
         comfort_deceleration = 1.5
         acceleration_exponent = 4
@@ -327,7 +339,7 @@ class ResearchIDM(SettingHighDResearch):
                                           max_acceleration, comfort_deceleration, 
                                           acceleration_exponent, 
                                           minimum_distance_1, minimum_distance_2,
-                                          vehicle_length)
+                                          vehicle_length, controlled)
         pass
     
         

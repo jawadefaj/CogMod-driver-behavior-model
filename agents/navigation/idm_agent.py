@@ -45,6 +45,8 @@ class IDMAgent(BasicAgent):
             self.far_distance = opt_dict['far_distance']
         
         self.IS_DRIVER_SET = False
+        self.IS_CONTROLLED = False
+        
         self.other_vehicle = None
         
         self.set_other_agent()
@@ -63,7 +65,7 @@ class IDMAgent(BasicAgent):
                            max_acceleration, comfort_deceleration, 
                            acceleration_exponent, 
                            minimum_distance_1, minimum_distance_2,
-                           vehicle_length):
+                           vehicle_length, controlled = False):
         self.desired_velocity = desired_velocity 
         self.safe_time_headway = safe_time_headway
         self.max_acceleration = max_acceleration
@@ -74,11 +76,14 @@ class IDMAgent(BasicAgent):
         self.vehicle_length = vehicle_length
         
         self.IS_DRIVER_SET = True
+        if controlled:
+            self.IS_CONTROLLED = True
         pass
     
     
     
     def run_step(self):
+        # self.logger.debug(f'run step {self.desired_velocity}')
         if not self.IS_DRIVER_SET:
             return super().run_step()
         else:
@@ -87,7 +92,10 @@ class IDMAgent(BasicAgent):
             velocity = self.get_vehicle_velocity_x()
             velocity_diff = self.get_vehicle_velocity_x() - self.get_other_vehicle_velocity_x()
             acceleration = self.calc_acceleration(gap, velocity, velocity_diff)
-            updated_velocity = velocity + (acceleration * TIME_STEP) + 0.6
+            if self.IS_CONTROLLED:
+                updated_velocity = self.desired_velocity
+            else:
+                updated_velocity = velocity + (acceleration * TIME_STEP) + 0.2
             self.set_target_speed(updated_velocity)
             # self.logger.info(f'run_step: vel {r(velocity)}, acc {r(acceleration)}, up_vel {r(updated_velocity)}')
             control = self._local_planner.run_step(debug=True)
