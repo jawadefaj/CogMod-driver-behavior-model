@@ -4,6 +4,7 @@ import os
 
 from lib import ClientUser, LoggerFactory, MapManager, MapNames, SimulationVisualization, Utils, SimulationMode
 from research import *
+from research.ResearchCogMod import ResearchCogMod
 from research.Research1v1NavPathModel import Research1v1NavPathModel
 from research.Research4v4 import Research4v4
 # from research.SimulationMode import SimulationMode
@@ -115,4 +116,31 @@ class ResearchFactory:
                          scenario=scenario
                          )
 
+        return research
+    
+    
+    @staticmethod
+    def createResearchCogMod(
+                            host="127.0.0.1", 
+                            port=2000, 
+                            defaultLogLevel=logging.INFO, 
+                            output_dir="logs", 
+                            map=MapNames.varied_width_lanes,
+                            simulationMode = SimulationMode.ASYNCHRONOUS,
+                            ) -> ResearchCogMod:
+        
+        print(f"research chosen : ResearchCogMod with host: {host}, port: {port}, log level: {defaultLogLevel}, output directory: {output_dir}")
+        
+        port = int(port)
+        name = "ResearchCogMod"
+        logPath = os.path.join(output_dir, f"{name}.log")
+        logger = LoggerFactory.getBaseLogger(name, defaultLevel=defaultLogLevel, file=logPath)
+        client = Utils.createClient(logger, host, port)
+        
+        research = ResearchCogMod(client,
+                                  mapName=map,
+                                  logLevel="INFO",
+                                  outputDir=output_dir,
+                                  simulationMode=simulationMode
+                                  )
         return research
