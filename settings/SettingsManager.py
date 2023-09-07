@@ -1,7 +1,9 @@
+import json
 import carla
 import logging
 
 from matplotlib import transforms
+from agents.pedestrians.soft import NavObjectMapper, NavPath
 from lib.ClientUser import ClientUser
 from .SourceDestinationPair import SourceDestinationPair
 from typing import List, Optional
@@ -104,12 +106,30 @@ class SettingsManager(ClientUser):
 
                 self._walkerSettings.append(
                     SourceDestinationPair(
-                        source=self._pointToLocation(sourcePoint),
+                        source=self._pointToLocation(sourcePoint, z=0.9),
                         destination=self._pointToLocation(destinationPoint, z=0.1)
                     )
                 )
 
         return self._walkerSettings
+    
+    def reverseWalkerSetting(self, walkerSetting: SourceDestinationPair) -> SourceDestinationPair:
+        """TODO Has elevation problems
+
+        Args:
+            walkerSetting (SourceDestinationPair): _description_
+
+        Returns:
+            SourceDestinationPair: _description_
+        """
+        reversed = SourceDestinationPair(
+            source=walkerSetting.destination,
+            destination=walkerSetting.source
+        )
+        reversed.source.z = reversed.destination.z # done because we need to spawn higher
+        reversed.destination.z = walkerSetting.source.z
+
+        return reversed
     
     def getWalkerSpawnPoints(self):
 
@@ -157,5 +177,23 @@ class SettingsManager(ClientUser):
             z = self.currentSetting["visualization_force_location"]["z"]
         )
     
+    def getNavPaths(self, filePath: str) -> List[NavPath]:
+        with open(filePath, "r") as f:
+            dicts = json.loads(f.read())
+            return NavObjectMapper.pathsFromDicts(dicts)
+    
+    def getNavPath(self, filePath: str, name: str) -> NavPath:
+        with open(filePath, "r") as f:
+            dicts = json.loads(f.read())
+            navPathDic = None
+            for dic in dicts:
+                if dic["id"] == name:
+                    navPathDic = dic
+                    break
+            return NavObjectMapper.pathFromDict(navPathDic)
+    
+    
+        
+
 
 

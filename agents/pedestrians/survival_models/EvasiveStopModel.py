@@ -3,6 +3,7 @@ from agents.pedestrians.PedState import PedState
 from agents.pedestrians.PedestrianAgent import PedestrianAgent
 from agents.pedestrians.StateTransitionModel import StateTransitionModel
 from agents.pedestrians.factors.InternalFactors import InternalFactors
+from lib.InteractionUtils import InteractionUtils
 from lib.ActorManager import ActorManager
 from lib.ObstacleManager import ObstacleManager
 from .SurvivalModel import SurvivalModel
@@ -51,8 +52,11 @@ class EvasiveStopModel(SurvivalModel, StateTransitionModel):
         # if TTC is not None and TTC < 1.5:
         #     return True
 
+
         TG = self.agent.getAvailableTimeGapWithEgo()
         # print(f"canfreeze TG: {TG}")
+        if not InteractionUtils.isOncoming(self.agent.walker, self.agent.egoVehicle):
+            return False
         if TG is not None and TG < 1:
             return True
         

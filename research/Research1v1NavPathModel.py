@@ -1,88 +1,84 @@
-
-from agents.pedestrians.soft import NavPointLocation, NavPointBehavior, LaneSection, Direction, NavPath, NavPoint
+import numpy as np
+import random
+import carla
+from agents.pedestrians.soft import *
+from lib import SimulationMode
+from lib.MapManager import MapNames
 from research.Research1v1 import Research1v1
 
 
 class Research1v1NavPathModel(Research1v1):
     
     
+    def __init__(self, 
+                 client: carla.Client, 
+                 mapName=MapNames.circle_t_junctions, 
+                 logLevel="INFO", 
+                 outputDir:str = "logs", 
+                 simulationMode = SimulationMode.ASYNCHRONOUS,
+                 settingsId = "setting1",
+                 stats=False,
+                 record=False,
+                 maxStepsPerCrossing=200,
+                 navPathFilePath="data/navpath/nav_path_straight_road.json",
+                 scenario = "psi-0002",
+                 ):
+
+        super().__init__(
+                         client=client, 
+                         mapName=mapName, 
+                         logLevel=logLevel, 
+                         outputDir=outputDir,
+                         simulationMode=simulationMode,
+                         settingsId=settingsId,
+                         stats=stats,
+                         record=record,
+                         maxStepsPerCrossing=maxStepsPerCrossing
+                         )
+        
+        self.name = "Research1v1NavPathModel"
+
+        self.scenario = scenario
+        self.navPathFilePath = navPathFilePath
+        pass
+        
+    @property
+    def navPath(self) -> NavPath:
+        if hasattr(self, "_navPath") is False or self._navPath is None:
+            # navPaths = self.settingsManager.getNavPaths("data/navpath/nav_path_straight_road.json")
+            # self._navPath = random.choice(navPaths)
+            # self._navPath = navPaths[4] # just for testing
+            
+            self._navPath = self.settingsManager.getNavPath(self.navPathFilePath, self.scenario)
+
+        return self._navPath
+    
     def createWalker(self):
         
-        super().createWalker()
-        self.setWalkerNavPath()
+        self.optionalFactors = []
+        
+        reverse = False
+        if self.navPath.direction == Direction.RL:
+            reverse = True
+
+        super().createWalker(reverse=reverse)
+
+        self.walkerAgent.setEgoVehicle(self.vehicle)
+        self.walkerAgent.setNavPath(self.navPath)
         pass
 
     
     def resetWalker(self, sameOrigin=True):
-        super().resetWalker()
-        self.setWalkerNavPath()
+        super().resetWalker(sameOrigin=True) # must always be same origin for nav points
+        
+        self.walkerAgent.setEgoVehicle(self.vehicle)
+        self.walkerAgent.setNavPath(self.navPath)
         pass
 
     
-    def setWalkerNavPath(self):
-        point1 = NavPoint(
-            NavPointLocation(
-                laneId=-1,
-                laneSection=LaneSection.LEFT,
-                distanceToEgo=24.0, 
-                distanceToInitialEgo=24.0, 
-            ),
-            NavPointBehavior(
-                speed=1,
-                direction=Direction.LR
-            )
-        )
-
-        point2 = NavPoint(
-            NavPointLocation(
-                laneId=-1,
-                laneSection=LaneSection.MIDDLE,
-                distanceToEgo=7.0, 
-                distanceToInitialEgo=25.0, 
-            ),
-            NavPointBehavior(
-                speed=0.5,
-                direction=Direction.LR
-            )
-        )
-
-        point3 = NavPoint(
-            NavPointLocation(
-                laneId=-1,
-                laneSection=LaneSection.MIDDLE,
-                distanceToEgo=1.0, 
-                distanceToInitialEgo=25.0, 
-            ),
-            NavPointBehavior(
-                speed=0.1,
-                direction=Direction.LR
-            )
-        )
-
-
-        point4 = NavPoint(
-            NavPointLocation(
-                laneId=0,
-                laneSection=LaneSection.LEFT,
-                distanceToEgo=-1, 
-                distanceToInitialEgo=25.0, 
-            ),
-            NavPointBehavior(
-                speed=1,
-                direction=Direction.LR
-            )
-        )
-
-        navPath = NavPath(
-            roadWidth=2 * 3.5,
-            path=[point1, point2, point3, point4],
-            nEgoDirectionLanes=1,
-            nEgoOppositeDirectionLanes=1,
-            avgSpeed=0.5,
-            maxSpeed=1.5,
-            minSpeed=0.0,
-            egoLaneWrtCenter = 1,
-            egoSpeedStart=20,
-            egoSpeedEnd=10
-        )
-        self.walkerAgent.setNavPath(navPath)
+    def createVehicle(self, randomizeSpawnPoint=False):
+        
+        meanSpeed = (self.navPath.egoConfiguration.egoSpeedStart + self.navPath.egoConfiguration.egoSpeedEnd) / 2
+        sd = 0.1
+        maxSpeed = np.random.normal(meanSpeed, sd) 
+        self.vehicle, self.vehicleAgent = super(Research1v1, self).createVehicle(self.getVehicleSetting(), maxSpeed=maxSpeed, randomizeSpawnPoint=randomizeSpawnPoint)
