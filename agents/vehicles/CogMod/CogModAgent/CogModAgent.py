@@ -33,19 +33,19 @@ class CogModAgent():
 
         self.gaze = self.driver_initializer.get_gaze_module()
 
-        self.servers_dict = self.driver_initializer.get_servers_dict()
-        self.longterm_memory = self.driver_initializer.get_longterm_memory()
-        self.complex_cognition = self.driver_initializer.get_complex_cognition()
-        self.motor_control = self.driver_initializer.get_motor_control()
+        # self.servers_dict = self.driver_initializer.get_servers_dict()
+        # self.longterm_memory = self.driver_initializer.get_longterm_memory()
+        # self.complex_cognition = self.driver_initializer.get_complex_cognition()
+        # self.motor_control = self.driver_initializer.get_motor_control()
 
-        self.vehicle_controller = self.driver_initializer.get_vehicle_controller()
+        # self.vehicle_controller = self.driver_initializer.get_vehicle_controller()
 
-        self.lane_keeping_task = LaneKeeping(self.local_map)
-        self.lane_following_task = LaneFollow(self.local_map)
+        # self.lane_keeping_task = LaneKeeping(self.local_map)
+        # self.lane_following_task = LaneFollow(self.local_map)
 
-        self.subtasks_queue = [self.lane_following_task, self.lane_keeping_task]
+        # self.subtasks_queue = [self.lane_following_task, self.lane_keeping_task]
 
-        self.request_handler = RequestHandler(self.subtasks_queue, self.servers_dict, self.logLevel)
+        # self.request_handler = RequestHandler(self.subtasks_queue, self.servers_dict, self.logLevel)
         
         self.counter = 0
         self.bigbang = time.time()
@@ -93,22 +93,22 @@ class CogModAgent():
         vehicle_inside_gaze_direction = self.gaze.filter_object_inside_gaze_direction(global_vehicle_list, manuever_type)
         # self.logger.info(f"vehicle: {vehicle_inside_gaze_direction}, dir {self.gaze.gaze_direction}")
         
-        self.local_map.update(vehicle_inside_gaze_direction, del_t)
+        # self.local_map.update(vehicle_inside_gaze_direction, del_t)
 
-        self.request_handler.process_request_in_cognitive_servers()
+        # self.request_handler.process_request_in_cognitive_servers()
 
-        response_queue = self.request_handler.get_responses_from_buffers()
+        # response_queue = self.request_handler.get_responses_from_buffers()
 
-        self.request_handler.send_response_and_localmap_to_subtasks(response_queue, self.local_map)
+        # self.request_handler.send_response_and_localmap_to_subtasks(response_queue, self.local_map)
 
-        subtask_requests = self.request_handler.get_request_from_subtasks()
+        # subtask_requests = self.request_handler.get_request_from_subtasks()
 
-        self.request_handler.send_request_to_servers(subtask_requests)
-        # self.logger.info(f"subtask state follow {self.lane_following_task.subtask_state}, keep {self.lane_keeping_task.subtask_state}")
-        if self.motor_control.target_waypoint is not None and self.motor_control.target_velocity  != -1:
-            control = self.vehicle_controller.run_step(target_speed=self.motor_control.target_velocity, 
-                                                        waypoint=self.motor_control.target_waypoint)
-            return control
+        # self.request_handler.send_request_to_servers(subtask_requests)
+        # # self.logger.info(f"subtask state follow {self.lane_following_task.subtask_state}, keep {self.lane_keeping_task.subtask_state}")
+        # if self.motor_control.target_waypoint is not None and self.motor_control.target_velocity  != -1:
+        #     control = self.vehicle_controller.run_step(target_speed=self.motor_control.target_velocity, 
+        #                                                 waypoint=self.motor_control.target_waypoint)
+        #     return control
         return None
     
     def get_vehicle_control(self):

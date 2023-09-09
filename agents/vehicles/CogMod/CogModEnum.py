@@ -43,14 +43,16 @@ class GazeDirection(Enum):
     """
     The gaze direction.
     """
-    LEFTBLINDSPOT = 0       # 0.04
-    LEFTMIRROR = 1          # 0.08
-    LEFT = 2                # 0.1
-    CENTER = 3              # 0.5
-    RIGHT = 4               # 0.1
-    RIGHTMIRROR = 5         # 0.08
-    RIGHTBLINDSPOT = 6      # 0.04
+    LEFTBLINDSPOT = 0
+    LEFTMIRROR = 1          
+    LEFT = 2               
+    CENTER = 3             
+    RIGHT = 4              
+    RIGHTMIRROR = 5         
+    RIGHTBLINDSPOT = 6     
     
-    
-    BACK = 7                # 0.06
+    REARMIRROR = 7
+    SPEEDOMETER = 8
+    CENTERCONSOLE = 9
+    OTHER = 10            
     pass

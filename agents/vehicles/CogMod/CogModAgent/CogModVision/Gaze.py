@@ -7,6 +7,7 @@ from ...CogModEnum import ManeuverType
 from shapely.geometry import LineString
 from shapely import geometry
 from shapely.geometry import Point
+from numpy import random
 
 
 class Gaze():
@@ -14,13 +15,15 @@ class Gaze():
 
         self.name = 'Gaze Module'
         self.tick_counter = 0
-        self.tick_frequency = 10
+        self.next_tick_time = 10
 
         self.vehicle = vehicle
         self.gaze_settings = gaze_settings
 
         self.gaze_direction_list = list(GazeDirection)
         self.gaze_direction = GazeDirection.CENTER
+        
+        self.probabilities = [0.01, 0.05, 0.1, 0.5, 0.1, 0.05, 0.01, 0.04, 0.03, 0.11]
         pass
     
 
@@ -38,6 +41,7 @@ class Gaze():
 
         gaze_triangle = geometry.Polygon([[p.x, p.y] for p in triangle_corners])
         # print('gaze triangle ', gaze_triangle)
+        self.draw_gaze_triangle()
 
         actor_list = []
         for actor in object_list:
@@ -51,8 +55,10 @@ class Gaze():
     def gaze_direction_tick(self, maneuver_type):
         self.tick_counter += 1
         gaze_direction = None
-        if self.tick_counter == self.tick_frequency:
+        if self.tick_counter >= self.next_tick_time:
             self.tick_counter = 0
+            self.next_tick_time = (313 + 5.8 * random.randint(10, 100)) / 40 # ms
+            print('next tick time ', self.next_tick_time)
             val = self.get_gaze_distribution(maneuver_type)
             gaze_direction = self.gaze_direction_list[val]
         else:
@@ -63,45 +69,22 @@ class Gaze():
     def get_gaze_direction(self):
         return self.gaze_direction
 
-
-    # x = np.random.normal(3.5, 0.9, 100000) # lane follow
-    # y = np.random.normal(3.5, 0.4, 100000) # vehicle follow
-
+    def sample_multinomial(self, probabilities):
+        """
+        Sample from a multinomial distribution with 1 trial and probabilities for each GazeDirection enum.
+        """
+        return random.multinomial(1, probabilities).argmax()
+    
     def get_gaze_distribution(self, maneuver_type):
         # print('maneuver type ', maneuver_type)
         if maneuver_type == ManeuverType.VEHICLE_FOLLOW:
-            val = np.random.normal(3.5, 1.5, 1)
-            val = int(val)
-            if self.check_valid_direction(val):
-                return val
-            else:
-                return 3
+            val = self.sample_multinomial(self.probabilities)
+            return val
         
         elif maneuver_type == ManeuverType.LANEFOLLOW:
-            val = np.random.normal(3.5, 2, 1)
-            val = int(val)
-            if self.check_valid_direction(val):
-                return val
-            else:
-                return 3
+            val = self.sample_multinomial(self.probabilities)
+            return val
         
-        # elif maneuver_type == ManeuverType.LANECHANGE_RIGHT:
-        #     val = np.random.lognormal(1, 1, 1)
-        #     val = int(val)
-        #     if self.check_valid_direction(val):
-        #         return val
-        #     else:
-        #         return 1
-        
-        # elif maneuver_type == ManeuverType.LANECHANGE_LEFT:
-        #     val = np.random.lognormal(1, 1, 1)
-        #     val = 6 - int(val)
-        #     if self.check_valid_direction(val):
-        #         return val
-        #     else:
-        #         return 5
-
-        pass
 
     def check_valid_direction(self, val):
         if val < 0 or val > 6:

@@ -12,7 +12,7 @@ class MapNames(Enum):
     varied_width_lanes = 'varied_width_lanes'
     roundabout1 = 'roundabout1'
     HighWay_Ring = 'HighWay_Ring'
-    # Town01 = 'Town01'
+    Town01 = 'Town01'
     # Town02 = 'Town02'
     # Town03 = 'Town03'
     # Town04 = 'Town04'

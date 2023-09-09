@@ -1,4 +1,4 @@
-# exec(open("sys_path_hack.py").read())
+exec(open("sys_path_hack.py").read())
 
 import logging
 from lib import SimulationMode
@@ -12,13 +12,14 @@ def main():
     defaultLogLevel = logging.INFO
     _map = MapNames.HighWay_Ring
     simulationMode = SimulationMode.SYNCHRONOUS
+    maxTicks = 2000
     research = ResearchFactory.createResearchCogMod(host=host, 
                                                     port=port, 
                                                     defaultLogLevel=defaultLogLevel, 
                                                     output_dir=output_dir, 
                                                     map=_map,
                                                     simulationMode=simulationMode,)
-
+    research.run(maxTicks=maxTicks)
 
 if __name__ == "__main__":
     main()
