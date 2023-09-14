@@ -15,32 +15,26 @@ class Gaze():
 
         self.name = 'Gaze Module'
         self.tick_counter = 0
-        self.next_tick_time = 10
+        self.gaze_allocation_tick = 10
+        self.time_delta = 0.04
 
         self.vehicle = vehicle
         self.gaze_settings = gaze_settings
 
-        self.gaze_direction_list = list(GazeDirection)
         self.gaze_direction = GazeDirection.CENTER
+        self.probabilities = [0.01, 0.05, 0.1, 0.5, 0.1, 0.05, 0.01, 0.04, 0.03, 0]
+        self.probabilities[-1] = 1 - sum(self.probabilities[:-1])
         
-        self.probabilities = [0.01, 0.05, 0.1, 0.5, 0.1, 0.05, 0.01, 0.04, 0.03, 0.11]
         pass
     
 
     def filter_object_inside_gaze_direction(self, object_list, maneuver_type):
 
-        gaze_direction = self.gaze_direction_tick(maneuver_type)
-        # print('gaze direction ', gaze_direction)
-        if gaze_direction not in self.gaze_settings.keys():
-            raise ValueError('need to have gaze direction')
-        self.gaze_direction = gaze_direction
-
-        gaze_settings = self.gaze_settings[self.gaze_direction]
-        
-        triangle_corners = self.find_gaze_triangle_corners(self.vehicle, gaze_settings)
+        self.gaze_direction = self.gaze_direction_tick(maneuver_type)
+        gaze_data = self.gaze_settings[self.gaze_direction]
+        triangle_corners = self.find_gaze_triangle_corners(self.vehicle, gaze_data)
 
         gaze_triangle = geometry.Polygon([[p.x, p.y] for p in triangle_corners])
-        # print('gaze triangle ', gaze_triangle)
         self.draw_gaze_triangle()
 
         actor_list = []
@@ -52,22 +46,33 @@ class Gaze():
 
         return actor_list
 
+    # this fucntion is called every tick 
+    # it will return a gaze direction based on the maneuver type if the gaze allocation time elapsed
+    # if the current direction is not center then it will return center (accounting for importance of the center gaze direction)
     def gaze_direction_tick(self, maneuver_type):
         self.tick_counter += 1
         gaze_direction = None
-        if self.tick_counter >= self.next_tick_time:
+        if self.tick_counter == self.gaze_allocation_tick:
             self.tick_counter = 0
-            self.next_tick_time = (313 + 5.8 * random.randint(10, 100)) / 40 # ms
-            print('next tick time ', self.next_tick_time)
-            val = self.get_gaze_distribution(maneuver_type)
-            gaze_direction = self.gaze_direction_list[val]
+            # if driver looking else where then we need to reset the gaze direction to center
+            if self.gaze_direction != GazeDirection.CENTER:
+                gaze_direction = GazeDirection.CENTER
+            else:
+                gaze_direction = self.get_gaze_direction(maneuver_type)
+            
+            prev_gaze_data = self.gaze_settings[self.gaze_direction]
+            cur_gaze_data = self.gaze_settings[gaze_direction]
+
+            angle_diff = abs(prev_gaze_data.get_eye_movement_angle() - cur_gaze_data.get_eye_movement_angle())
+            self.gaze_allocation_tick = int((313 + 5.8 * angle_diff) * self.time_delta)
         else:
             gaze_direction = self.gaze_direction
-        # self.draw_gaze_triangle()
         return gaze_direction
 
-    def get_gaze_direction(self):
-        return self.gaze_direction
+    def get_gaze_direction(self, maneuver_type):
+        val = self.get_gaze_distribution(maneuver_type)
+        gaze_direction = list(self.gaze_settings.keys())[val]
+        return gaze_direction
 
     def sample_multinomial(self, probabilities):
         """
@@ -76,7 +81,6 @@ class Gaze():
         return random.multinomial(1, probabilities).argmax()
     
     def get_gaze_distribution(self, maneuver_type):
-        # print('maneuver type ', maneuver_type)
         if maneuver_type == ManeuverType.VEHICLE_FOLLOW:
             val = self.sample_multinomial(self.probabilities)
             return val
@@ -84,40 +88,11 @@ class Gaze():
         elif maneuver_type == ManeuverType.LANEFOLLOW:
             val = self.sample_multinomial(self.probabilities)
             return val
-        
 
-    def check_valid_direction(self, val):
-        if val < 0 or val > 6:
-            return False
-        return True
-
-
-    def draw_gaze_triangle(self):
-        # print('gaze direction ', self.gaze_direction)
-        # print('gaze settings ', self.gaze_settings.keys())
-        if self.gaze_direction not in self.gaze_settings.keys():
-            raise ValueError('need to have gaze direction')
-            return
-        gaze_settings = self.gaze_settings[self.gaze_direction]
-        
-        debug = self.vehicle.get_world().debug
-        
-        triangle_corners = self.find_gaze_triangle_corners(self.vehicle, gaze_settings)
-
-        for i in range(len(triangle_corners)):
-            # print('triangle corners ', triangle_corners[i])
-            debug.draw_line(begin=triangle_corners[i], 
-                            end=triangle_corners[(i+1)%3],
-                            thickness=0.2,
-                            color=gaze_settings[3],
-                            life_time=0.2)
-        
-        return triangle_corners
-
-    def find_gaze_triangle_corners(self, vehicle, gaze_settings, height = 1):
-        gaze_direction, view_angle, length, _ = gaze_settings
+    def find_gaze_triangle_corners(self, vehicle, gaze_data, height = 1):
+        area = gaze_data.get_area()
+        gaze_direction, view_angle, length = area
         view_angle = math.radians(view_angle)   # convert to radians
-        # print(gaze_direction, view_angle, length, color)   
 
         vehicle_transform = vehicle.get_transform()
         vehicle_center = vehicle_transform.location
@@ -135,7 +110,6 @@ class Gaze():
         left_point = self.find_corner_point_of_triangle(height, view_angle, length, normalized_direction_vector)
         right_point = self.find_corner_point_of_triangle(height, -view_angle, length, normalized_direction_vector)
 
-
         left_point = vehicle_center + left_point
         right_point = vehicle_center + right_point
         end_point = vehicle_center + direction_vector
@@ -152,3 +126,17 @@ class Gaze():
         left_point = carla.Vector3D(left_point_x*length, left_point_y*length, height)
         return left_point
     
+    
+    def draw_gaze_triangle(self):
+        
+        gaze_data = self.gaze_settings[self.gaze_direction]
+        debug = self.vehicle.get_world().debug
+        triangle_corners = self.find_gaze_triangle_corners(self.vehicle, gaze_data)
+        for i in range(len(triangle_corners)):
+            debug.draw_line(begin=triangle_corners[i], 
+                            end=triangle_corners[(i+1)%3],
+                            thickness=0.2,
+                            color=gaze_data.get_color(),
+                            life_time=0.2)
+        
+        return triangle_corners
