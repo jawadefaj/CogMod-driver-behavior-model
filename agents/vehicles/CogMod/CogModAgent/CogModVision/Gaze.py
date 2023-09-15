@@ -14,28 +14,41 @@ class Gaze():
     def __init__(self, vehicle, gaze_settings):
 
         self.name = 'Gaze Module'
-        self.tick_counter = 0
-        self.gaze_allocation_tick = 10
-        self.time_delta = 0.04
 
         self.vehicle = vehicle
         self.gaze_settings = gaze_settings
 
-        self.gaze_direction = GazeDirection.CENTER
-        self.probabilities = [0.01, 0.05, 0.1, 0.5, 0.1, 0.05, 0.01, 0.04, 0.03, 0]
-        self.probabilities[-1] = 1 - sum(self.probabilities[:-1])
+        self.gaze_directions = list(self.gaze_settings.keys())
+        self.gaze_fixation_areas = [self.gaze_settings[direction].get_fixation_area() for direction in self.gaze_directions]
+        self.gaze_fixation_probability = [self.gaze_settings[direction].get_fixation_probability() for direction in self.gaze_directions]
         
         pass
     
+    def sample_gaze_direction(self):
+        val = self.sample_multinomial()
+        gaze_direction = self.gaze_directions[val]
+        return gaze_direction
 
-    def filter_object_inside_gaze_direction(self, object_list, maneuver_type):
 
-        self.gaze_direction = self.gaze_direction_tick(maneuver_type)
-        gaze_data = self.gaze_settings[self.gaze_direction]
-        triangle_corners = self.find_gaze_triangle_corners(self.vehicle, gaze_data)
+    def sample_multinomial(self):
+        """
+        Sample from a multinomial distribution with 1 trial and probabilities for each GazeDirection enum.
+        """
+        return random.multinomial(1, self.gaze_fixation_probability).argmax()
+
+    def get_movement_angle_diff(self, prev_gaze_direction, cur_gaze_direction):
+        prev_gaze_data = self.gaze_settings[prev_gaze_direction]
+        cur_gaze_data = self.gaze_settings[cur_gaze_direction]
+        angle_diff = abs(prev_gaze_data.get_movement_factor() - cur_gaze_data.get_movement_factor())
+        return angle_diff
+
+
+    def filter_object_inside_fixation_area(self, object_list, gaze_direction):
+
+        triangle_corners = self.find_gaze_triangle_corners(self.vehicle, gaze_direction)
 
         gaze_triangle = geometry.Polygon([[p.x, p.y] for p in triangle_corners])
-        self.draw_gaze_triangle()
+        self.draw_gaze_triangle(gaze_direction)
 
         actor_list = []
         for actor in object_list:
@@ -46,52 +59,12 @@ class Gaze():
 
         return actor_list
 
-    # this fucntion is called every tick 
-    # it will return a gaze direction based on the maneuver type if the gaze allocation time elapsed
-    # if the current direction is not center then it will return center (accounting for importance of the center gaze direction)
-    def gaze_direction_tick(self, maneuver_type):
-        self.tick_counter += 1
-        gaze_direction = None
-        if self.tick_counter == self.gaze_allocation_tick:
-            self.tick_counter = 0
-            # if driver looking else where then we need to reset the gaze direction to center
-            if self.gaze_direction != GazeDirection.CENTER:
-                gaze_direction = GazeDirection.CENTER
-            else:
-                gaze_direction = self.get_gaze_direction(maneuver_type)
-            
-            prev_gaze_data = self.gaze_settings[self.gaze_direction]
-            cur_gaze_data = self.gaze_settings[gaze_direction]
+    def find_gaze_triangle_corners(self, vehicle, gaze_direction, height = 1):
 
-            angle_diff = abs(prev_gaze_data.get_eye_movement_angle() - cur_gaze_data.get_eye_movement_angle())
-            self.gaze_allocation_tick = int((313 + 5.8 * angle_diff) * self.time_delta)
-        else:
-            gaze_direction = self.gaze_direction
-        return gaze_direction
+        index = self.gaze_directions.index(gaze_direction)
+        fixation_area = self.gaze_fixation_areas[index]
 
-    def get_gaze_direction(self, maneuver_type):
-        val = self.get_gaze_distribution(maneuver_type)
-        gaze_direction = list(self.gaze_settings.keys())[val]
-        return gaze_direction
-
-    def sample_multinomial(self, probabilities):
-        """
-        Sample from a multinomial distribution with 1 trial and probabilities for each GazeDirection enum.
-        """
-        return random.multinomial(1, probabilities).argmax()
-    
-    def get_gaze_distribution(self, maneuver_type):
-        if maneuver_type == ManeuverType.VEHICLE_FOLLOW:
-            val = self.sample_multinomial(self.probabilities)
-            return val
-        
-        elif maneuver_type == ManeuverType.LANEFOLLOW:
-            val = self.sample_multinomial(self.probabilities)
-            return val
-
-    def find_gaze_triangle_corners(self, vehicle, gaze_data, height = 1):
-        area = gaze_data.get_area()
-        gaze_direction, view_angle, length = area
+        gaze_direction, view_angle, length = fixation_area
         view_angle = math.radians(view_angle)   # convert to radians
 
         vehicle_transform = vehicle.get_transform()
@@ -127,16 +100,67 @@ class Gaze():
         return left_point
     
     
-    def draw_gaze_triangle(self):
+
+
+
+    def draw_gaze_triangle(self, gaze_direction):
         
-        gaze_data = self.gaze_settings[self.gaze_direction]
         debug = self.vehicle.get_world().debug
-        triangle_corners = self.find_gaze_triangle_corners(self.vehicle, gaze_data)
+        triangle_corners = self.find_gaze_triangle_corners(self.vehicle, gaze_direction)
         for i in range(len(triangle_corners)):
             debug.draw_line(begin=triangle_corners[i], 
                             end=triangle_corners[(i+1)%3],
                             thickness=0.2,
-                            color=gaze_data.get_color(),
+                            color=carla.Color(255, 0, 0, 0),
                             life_time=0.2)
         
         return triangle_corners
+
+
+
+
+    
+    # # this fucntion is called every tick 
+    # # it will return a gaze direction based on the maneuver type if the gaze allocation time elapsed
+    # # if the current direction is not center then it will return center (accounting for importance of the center gaze direction)
+    # def gaze_direction_tick(self, maneuver_type):
+    #     self.tick_counter += 1
+    #     gaze_direction = None
+    #     if self.tick_counter == self.gaze_allocation_tick:
+    #         self.tick_counter = 0
+    #         # if driver looking else where then we need to reset the gaze direction to center
+    #         if self.cur_gaze_direction != GazeDirection.CENTER:
+    #             gaze_direction = GazeDirection.CENTER
+    #         else:
+    #             gaze_direction = self.get_gaze_direction(maneuver_type)
+            
+    #         prev_gaze_data = self.gaze_settings[self.cur_gaze_direction]
+    #         cur_gaze_data = self.gaze_settings[gaze_direction]
+
+    #         angle_diff = abs(prev_gaze_data.get_eye_movement_angle() - cur_gaze_data.get_eye_movement_angle())
+    #         self.gaze_allocation_tick = int((313 + 5.8 * angle_diff) * self.time_delta)
+    #     else:
+    #         gaze_direction = self.cur_gaze_direction
+    #     return gaze_direction
+    
+
+
+    # def get_gaze_direction(self, maneuver_type):
+    #     val = self.get_gaze_distribution(maneuver_type)
+    #     gaze_direction = list(self.gaze_settings.keys())[val]
+    #     return gaze_direction
+
+    # def sample_multinomial(self, probabilities):
+    #     """
+    #     Sample from a multinomial distribution with 1 trial and probabilities for each GazeDirection enum.
+    #     """
+    #     return random.multinomial(1, probabilities).argmax()
+    
+    # def get_gaze_distribution(self, maneuver_type):
+    #     if maneuver_type == ManeuverType.VEHICLE_FOLLOW:
+    #         val = self.sample_multinomial(self.gaze_fixation_probability)
+    #         return val
+        
+    #     elif maneuver_type == ManeuverType.LANEFOLLOW:
+    #         val = self.sample_multinomial(self.gaze_fixation_probability)
+    #         return val

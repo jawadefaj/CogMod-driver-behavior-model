@@ -33,7 +33,7 @@ class ResearchCogMod(BaseCogModResearch):
         self.simulator = None
         self.logger = LoggerFactory.getBaseLogger(self.name, defaultLevel=logLevel, file=os.path.join(outputDir, f"{self.name}.log"))
         
-        self.driver_settings = DriverSettings.driver_profile['driver2']
+        self.driver_settings = DriverSettings.driver_profile['updated_driver']
         self.source_destination_pair = self.source_destination_pairs[0]
         
         self.setupSimulator()

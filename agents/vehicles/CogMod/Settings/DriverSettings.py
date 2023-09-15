@@ -3,6 +3,21 @@ from .GazeSettings import *
 
 CONST = 500
 driver_profile = {
+    'updated_driver': { 'vision':{
+                            'gaze':
+                                { 
+                                    'lane_follow': lane_follow_gaze, 
+                                    'vehicle_follow': vehicle_follow_gaze
+                                },
+                            'd_saccade_const': 21,
+                            'd_saccade_mul': 2.2,
+                            'l_saccale_const': 242,
+                            'l_saccale_mul': 3.59,
+                            'base_saccade_duration': 50,
+                        },
+                    },
+
+                                    
     # 'driver1': {
     #     'servers': {
     #         'longterm_memory': {'queue_length': 10, 'tick_frequency': 1,},
@@ -48,7 +63,7 @@ driver_profile = {
             'vehicle_tracking_radius': CONST,                               # important parameter
             'global_plan_sampling_resolution': 1.0,               
         },
-        'gaze': Gaze_Settings1,
+        'gaze': lane_follow_gaze,
         'controller': {
             'lateral_PID': {'K_P': 1.95, 'K_I': 0.05, 'K_D': 0.2, 'dt': 0.04,},
             'longitudinal_PID': {'K_P': 20.0, 'K_I': 5, 'K_D': 0.0, 'dt': 0.04,},

@@ -1,38 +1,43 @@
 from ..CogModEnum import GazeDirection
 
 from lib import utils
+from agents.vehicles.CogMod.CogModAgent.CogModVision.GazeInfo import GazeInfo
 
 
 
-class GazeData:
-    def __init__(self, eye_movement_angle: float, area: tuple, vis_color) -> None:
-        self.eye_movement_angle = eye_movement_angle
-        self.area = area
-        self.vis_color = vis_color
-    
-    def get_eye_movement_angle(self):
-        return self.eye_movement_angle
-    
-    def get_area(self):
-        return self.area
-    
-    def get_color(self):
-        return self.vis_color
+lane_follow_gaze = {
 
+    GazeDirection.CENTER: GazeInfo( movement_factor=0, fixation_area=(0, 30, 100), fixation_probability=0.5),
+    GazeDirection.LEFT: GazeInfo( movement_factor=45, fixation_area=(70, 70, 70), fixation_probability=0.1),
+    GazeDirection.RIGHT: GazeInfo( movement_factor=45, fixation_area=(-70, 70, 70), fixation_probability=0.1),
 
-Gaze_Settings1 = {
-    GazeDirection.CENTER: GazeData(0, (0, 30, 100), utils.red),
-    GazeDirection.LEFT: GazeData(45, (70, 70, 70), utils.green),
-    GazeDirection.RIGHT: GazeData(45, (-70, 70, 70), utils.blue),
-    
-    GazeDirection.LEFTBLINDSPOT: GazeData(90, (130, 30, 20), utils.green),
-    GazeDirection.RIGHTBLINDSPOT: GazeData(90, (-130, 30, 20), utils.blue),
-    
-    GazeDirection.LEFTMIRROR: GazeData(55, (160, 20, 50), utils.green),
-    GazeDirection.RIGHTMIRROR: GazeData(55, (-160, 20, 50), utils.blue),
-    GazeDirection.REARMIRROR: GazeData(35, (179, 45, 100), utils.red),
-    
-    GazeDirection.SPEEDOMETER: GazeData(30, (0, 50, 5), utils.cyan),
-    GazeDirection.CENTERCONSOLE: GazeData(30, (0, 10, 5), utils.cyan),
-    GazeDirection.OTHER: GazeData(45, (0, 90, 5), utils.cyan),
+    GazeDirection.LEFTBLINDSPOT: GazeInfo( movement_factor=90, fixation_area=(130, 30, 20), fixation_probability=0.05),
+    GazeDirection.RIGHTBLINDSPOT: GazeInfo( movement_factor=90, fixation_area=(-130, 30, 20), fixation_probability=0.05),
+
+    GazeDirection.LEFTMIRROR: GazeInfo( movement_factor=55, fixation_area=(160, 20, 50), fixation_probability=0.01),
+    GazeDirection.RIGHTMIRROR: GazeInfo( movement_factor=55, fixation_area=(-160, 20, 50), fixation_probability=0.01),
+    GazeDirection.REARMIRROR: GazeInfo( movement_factor=35, fixation_area=(179, 45, 100), fixation_probability=0.04),
+
+    GazeDirection.SPEEDOMETER: GazeInfo( movement_factor=30, fixation_area=(0, 50, 5), fixation_probability=0.03),
+    GazeDirection.CENTERCONSOLE: GazeInfo( movement_factor=30, fixation_area=(0, 10, 5), fixation_probability=0.03),
+    GazeDirection.OTHER: GazeInfo( movement_factor=45, fixation_area=(0, 90, 5), fixation_probability=0.03),
 }
+
+vehicle_follow_gaze = {
+
+    GazeDirection.CENTER: GazeInfo( movement_factor=0, fixation_area=(0, 30, 100), fixation_probability=0.6),
+    GazeDirection.LEFT: GazeInfo( movement_factor=45, fixation_area=(70, 70, 70), fixation_probability=0.1),
+    GazeDirection.RIGHT: GazeInfo( movement_factor=45, fixation_area=(-70, 70, 70), fixation_probability=0.1),
+
+    GazeDirection.LEFTBLINDSPOT: GazeInfo( movement_factor=90, fixation_area=(130, 30, 20), fixation_probability=0.05),
+    GazeDirection.RIGHTBLINDSPOT: GazeInfo( movement_factor=90, fixation_area=(-130, 30, 20), fixation_probability=0.05),
+
+    GazeDirection.LEFTMIRROR: GazeInfo( movement_factor=55, fixation_area=(160, 20, 50), fixation_probability=0.01),
+    GazeDirection.RIGHTMIRROR: GazeInfo( movement_factor=55, fixation_area=(-160, 20, 50), fixation_probability=0.01),
+    GazeDirection.REARMIRROR: GazeInfo( movement_factor=35, fixation_area=(179, 45, 100), fixation_probability=0.04),
+
+    GazeDirection.SPEEDOMETER: GazeInfo( movement_factor=30, fixation_area=(0, 50, 5), fixation_probability=0.03),
+    GazeDirection.CENTERCONSOLE: GazeInfo( movement_factor=30, fixation_area=(0, 10, 5), fixation_probability=0.03),
+    GazeDirection.OTHER: GazeInfo( movement_factor=45, fixation_area=(0, 90, 5), fixation_probability=0.03),
+}
+

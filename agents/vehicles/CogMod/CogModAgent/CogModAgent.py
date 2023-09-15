@@ -1,6 +1,6 @@
 import os
 import logging
-from .AgentInitializer import AgentIntializer
+from .UpdatedAgentInitializer import AgentIntializer
 from .CognitiveModel.Subtasks.LaneKeeping import LaneKeeping
 from .CognitiveModel.Subtasks.LaneFollow import LaneFollow
 from .RequestHandler import RequestHandler
@@ -27,11 +27,11 @@ class CogModAgent():
                                                   self.destination_point,
                                                   self.driver_profile)
         self.logLevel = logging.INFO
-        # self.logger = LoggerFactory.create(self.name, {'LOG_LEVEL':self.logLevel})
+        self.logger = LoggerFactory.create(self.name, {'LOG_LEVEL':self.logLevel})
 
-        self.local_map = self.driver_initializer.get_local_map()
+        # self.local_map = self.driver_initializer.get_local_map()
 
-        self.gaze = self.driver_initializer.get_gaze_module()
+        self.vision_manager = self.driver_initializer.vision_manager
 
         # self.servers_dict = self.driver_initializer.get_servers_dict()
         # self.longterm_memory = self.driver_initializer.get_longterm_memory()
@@ -62,9 +62,9 @@ class CogModAgent():
 
     # depending on what the drivier is doing, we select a manuever type 
     def get_current_manuever(self):
-        tracked_agent_manager = self.local_map.trackedAgentManager
-        if tracked_agent_manager.is_there_vehicle('front'):
-            return ManeuverType.VEHICLE_FOLLOW
+        # tracked_agent_manager = self.local_map.trackedAgentManager
+        # if tracked_agent_manager.is_there_vehicle('front'):
+        #     return ManeuverType.VEHICLE_FOLLOW
         return ManeuverType.LANEFOLLOW
 
 
@@ -90,8 +90,10 @@ class CogModAgent():
         # self.logger.info(f"update_agent {self.counter}, {cur_time-self.bigbang}")
         manuever_type = self.get_current_manuever()
 
-        vehicle_inside_gaze_direction = self.gaze.filter_object_inside_gaze_direction(global_vehicle_list, manuever_type)
-        # self.logger.info(f"vehicle: {vehicle_inside_gaze_direction}, dir {self.gaze.gaze_direction}")
+        vehicle_inside_gaze_direction = self.vision_manager.tick(self.vehicle, manuever_type, global_vehicle_list)
+
+        # vehicle_inside_gaze_direction = self.vision_manager.filter_object_inside_gaze_direction(global_vehicle_list, manuever_type)
+        # self.logger.info(f"vehicle: {vehicle_inside_gaze_direction}, dir {self.vision_manager.current_gaze_direction}")
         
         # self.local_map.update(vehicle_inside_gaze_direction, del_t)
 
