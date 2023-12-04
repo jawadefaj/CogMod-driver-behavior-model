@@ -1,3 +1,5 @@
+import numpy as np
+import carla
 from agents.pedestrians.ForceModel import ForceModel
 from agents.pedestrians.PedState import PedState
 from agents.pedestrians.PedestrianAgent import PedestrianAgent
@@ -22,14 +24,24 @@ class EvasiveStopModel(SurvivalModel, StateTransitionModel):
             agent, actorManager, obstacleManager, internalFactors=internalFactors
         )
 
+        self._startVelocity = None
+        self._maxActuationTime = np.random.uniform(0.15, 1.5)
+        self._actuationTimeElapsed = None # seconds
+        self._lastTick = None
+
         pass
 
     @property
     def name(self):
         return f"EvasiveStopModel #{self.agent.id}"
+    
+    def _reset(self):
+        self._startVelocity = None
+        self._actuationTimeElapsed = None # seconds
+        self._lastTick = None
+
 
     def getNewState(self):
-        # print(f"{self.name} getNewState the pedestrian")
         if self.agent.isFrozen() and self.canUnfreeze():
             # print(f"{self.name} unfreezing the pedestrian")
             return PedState.CROSSING
@@ -38,10 +50,42 @@ class EvasiveStopModel(SurvivalModel, StateTransitionModel):
             return PedState.FROZEN
 
     def calculateForce(self):
-        return None
+
+        if not self.agent.isFrozen():
+            self._reset()
+            return None
+        
+        # TODO make a easing function
+        if self._startVelocity is None:
+            self._startVelocity = self.agent.velocity # TODO this is a bit incorrect 
+            self._actuationTimeElapsed = 0.0
+            self._lastTick = self.agent.currentEpisodeTick
+        
+        if self._actuationTimeElapsed > self._maxActuationTime:
+            # hugeForce = -1 * (self._startVelocity / 0.001) # force will cause back and forth velocity
+            return -1 * (self.agent.velocity / self.agent.timeDelta) # force will cause back and forth velocity
+            # return None
+        
+        self._actuationTimeElapsed = self._actuationTimeElapsed + (self.agent.currentEpisodeTick - self._lastTick) * self.agent.timeDelta
+        self._lastTick = self.agent.currentEpisodeTick
+        # a linear easing function
+        # return self._startVelocity * (1 - self._actuationTimeElapsed / self._maxActuationTime)
+        # return -1 * (self._startVelocity / self._maxActuationTime)
+        # return -1 * (self._startVelocity / self._maxActuationTime)
+        newV = self.stepV()
+        # newV = curV + force * timedelta
+        force = (newV - self.agent.velocity) / self.agent.timeDelta
+        return force
+        
+    def canHardStop(self) -> bool:
+        if not self.agent.isFrozen():
+            return False
+        if self._startVelocity is None:
+            return False
+        return self._actuationTimeElapsed >= self._maxActuationTime
 
     
-    def canfreeze(self):
+    def canfreeze(self, TGThreshold=0.5):
         """Can freeze only works if the TTC is less than 1.5 seconds
 
         Returns:
@@ -57,16 +101,21 @@ class EvasiveStopModel(SurvivalModel, StateTransitionModel):
         # print(f"canfreeze TG: {TG}")
         if not InteractionUtils.isOncoming(self.agent.walker, self.agent.egoVehicle):
             return False
-        if TG is not None and TG < 1:
+        if TG is not None and TG < TGThreshold:
             return True
         
         return False
 
 
     def canUnfreeze(self):
+        if not InteractionUtils.isOncoming(self.agent.walker, self.agent.egoVehicle): # TODO this is a bit incorrect and will unfreeze when in conflict with other vehicles.
+            return True
         distance = self.agent.distanceFromEgo()
         if distance < 0.5:
             return False
-        if self.canfreeze():
+        if self.canfreeze(TGThreshold=0.5):
             return False
         return True
+    
+    def stepV(self) -> carla.Vector3D:
+        return self._startVelocity * (1 - self._actuationTimeElapsed / self._maxActuationTime)
