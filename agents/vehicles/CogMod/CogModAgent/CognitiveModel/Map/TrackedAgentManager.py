@@ -24,6 +24,13 @@ class TrackedAgentManager:
         # todo: add other zones
         self.surrounding_agents = {
             'front': WorkingMemory(),
+            'front_left': WorkingMemory(),
+            'front_right': WorkingMemory(),
+            'left': WorkingMemory(),
+            'right': WorkingMemory(),
+            'rear_left': WorkingMemory(),
+            'rear': WorkingMemory(),
+            'rear_right': WorkingMemory()
         }
 
         self.previous_vehicle_location = self.vehicle.get_location()
