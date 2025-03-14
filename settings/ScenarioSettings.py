@@ -68,7 +68,7 @@ scenarios = {
         "cogmod_agent": {
             "source": None,
             "destination": None,
-            "driver_profile": driver_profile['driver2']
+            "driver_profile": driver_profile['driver4']
         },
     },
 }

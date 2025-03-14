@@ -96,7 +96,7 @@ class DriverModifier():
         preceding_agent_location = preceding_agent.vehicle.get_location()
         nearest_waypoint_preceding_agent = map.get_waypoint(preceding_agent_location, project_to_road=True)
         velocity_df = np.sqrt(ego_agent_df['xVelocity']**2 + ego_agent_df['yVelocity']**2)
-        desired_velocity = velocity_df.max()
+        desired_velocity = velocity_df.max() + 1.9
         
         local_map = cogmod_settings['driver_profile']['local_map']
         local_map['vehicle_tracking_radius'] = tracking_distance
@@ -114,7 +114,7 @@ class DriverModifier():
         cogmod_settings['destination'] = destination_location
 
         lane_following_subtask = cogmod_settings['driver_profile']['subtasks_parameters']['lane_following']
-        lane_following_subtask['desired_velocity'] = desired_velocity
+        lane_following_subtask['desired_velocity'] =  desired_velocity
         lane_following_subtask['safe_time_headway'] = 0.5
         lane_following_subtask['max_acceleration'] = 2.9
         lane_following_subtask['comfort_deceleration'] = 1.67
@@ -129,13 +129,13 @@ class DriverModifier():
         cogmod_settings = prev_cogmod_settings
         velocity_df = np.sqrt(ego_agent_df['xVelocity']**2 + ego_agent_df['yVelocity']**2)
 
-        desired_velocity = velocity_df.iloc[0]
+        desired_velocity = velocity_df.max() + 2.5
        
         subtasks_parameters = cogmod_settings['driver_profile']['subtasks_parameters']
         lane_following_subtask = subtasks_parameters['lane_following']
 
-        lane_following_subtask['desired_velocity'] = 50
-        lane_following_subtask['safe_time_headway'] = 0.5
+        lane_following_subtask['desired_velocity'] = desired_velocity
+        lane_following_subtask['safe_time_headway'] = 0.1
         lane_following_subtask['max_acceleration'] = 2.9
         lane_following_subtask['comfort_deceleration'] = 1.67
         lane_following_subtask['acceleration_exponent'] = 4
@@ -334,7 +334,7 @@ class ResearchCarFollowRepeat(BaseCogModResearch):
         ego_location = ego_vehicle.get_location()
         preceding_location = preceding_vehicle.get_location()
 
-        self.SetSpectator(ego_location, height=200)
+        self.SetSpectator(ego_location, height=50)
         # print('cogmod speed:     ', round(ego_vehicle.get_velocity().length(), 2))
         if self.scenario_status == ScenarioState.START:
             ego_control = ego_agent.run_step(del_t)

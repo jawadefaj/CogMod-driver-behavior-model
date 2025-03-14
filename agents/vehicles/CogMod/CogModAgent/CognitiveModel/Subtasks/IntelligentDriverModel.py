@@ -64,7 +64,7 @@ class IntelligentDriverModel():
         deceleration = math.pow(self.calc_desired_gap() / min(self.far_distance, gap), 2)
 
         ret = float(self.max_acceleration * (1 - acceleration - deceleration))
-        self.logger.info(f'calc_acc {acceleration}, dec {deceleration}, ret {str(ret)}')
+        # self.logger.info(f'calc_acc {acceleration}, dec {deceleration}, ret {str(ret)}')
         return ret
 
     def vehicle_velocity2D(self):
@@ -90,14 +90,14 @@ class IntelligentDriverModel():
         ab = self.max_acceleration * self.comfort_deceleration
         c = ((self.safe_time_headway * pv) + ((pv * del_v) / (2 * math.sqrt(ab))))
         ret = float(self.minimum_distance + max(0, c))
-        self.logger.info(f'calc_desired_gap: del_v {del_v}, ab {round(ab,2)}, c {round(c,2)}, ret {round(ret,2)}')
+        # self.logger.info(f'calc_desired_gap: del_v {del_v}, ab {round(ab,2)}, c {round(c,2)}, ret {round(ret,2)}')
         return ret
 
 
     def calc_velocity(self, delta_time=-1):
         new_velocity = self.calc_raw_velocity(delta_time)
         ret = float(max(0, new_velocity))
-        self.logger.info(f'calc_velocity: {round(ret,2)}, ')
+        # self.logger.info(f'calc_velocity: {round(ret,2)}, ')
         return ret
 
 
@@ -108,7 +108,7 @@ class IntelligentDriverModel():
             result = float(vehicle_velocity + (acceleration * delta_time))
         else:
             result = float(vehicle_velocity + (acceleration * TIME_STEP))
-        self.logger.info(f'veh vel {round(vehicle_velocity,2)}, acce {round(acceleration,2)}, calc_raw_velocity: {round(result,2)}, ')
+        # self.logger.info(f'veh vel {round(vehicle_velocity,2)}, acce {round(acceleration,2)}, calc_raw_velocity: {round(result,2)}, {delta_time}')
         return result
 
 

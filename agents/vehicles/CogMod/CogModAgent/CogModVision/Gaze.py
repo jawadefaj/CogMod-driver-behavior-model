@@ -69,21 +69,22 @@ class Gaze():
 
     def get_gaze_distribution(self, maneuver_type):
         # print('maneuver type ', maneuver_type)
-        if maneuver_type == ManeuverType.VEHICLE_FOLLOW:
-            val = np.random.normal(3.5, 1.5, 1)
-            val = int(val)
-            if self.check_valid_direction(val):
-                return val
-            else:
-                return 3
+        # if maneuver_type == ManeuverType.VEHICLE_FOLLOW:
+        #     val = np.random.normal(3.5, 1.5, 1)
+        #     val = int(val)
+        #     if self.check_valid_direction(val):
+        #         return val
+        #     else:
+        #         return 3
         
-        elif maneuver_type == ManeuverType.LANEFOLLOW:
-            val = np.random.normal(3.5, 2, 1)
-            val = int(val)
-            if self.check_valid_direction(val):
-                return val
-            else:
-                return 3
+        # elif maneuver_type == ManeuverType.LANEFOLLOW:
+        #     val = np.random.normal(3.5, 2, 1)
+        #     val = int(val)
+        #     if self.check_valid_direction(val):
+        #         return val
+        #     else:
+        #         return 3
+        return 3
         
         # elif maneuver_type == ManeuverType.LANECHANGE_RIGHT:
         #     val = np.random.lognormal(1, 1, 1)
